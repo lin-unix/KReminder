@@ -1,0 +1,37 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x12\x00K\x00R\x00e\x00m\x00i\x00n\x00d\x00e\x00r)
+
+[CMake]
+BuildDirs=/home/steven/Documents/Projects/KReminder/build
+CMakeDir=/usr/share/cmake-2.8/Modules
+Current CMake Binary=file:///usr/bin/cmake
+CurrentBuildDir=file:///home/steven/Documents/Projects/KReminder/build
+CurrentBuildType=Debug
+CurrentInstallDir=file:///usr/local
+Extra Arguments=
+ProjectRootRelative=./
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=KReminder
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x02\x00\x00\x00\x12\x00K\x00R\x00e\x00m\x00i\x00n\x00d\x00e\x00r\x00\x00\x00\x12\x00K\x00R\x00e\x00m\x00i\x00n\x00d\x00e\x00r)
+Dependency Action=Build
+EnvironmentGroup=default
+Executable=file:///home/steven/Documents/Projects/KReminder/build/KReminder
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+Project Target=
+Use External Terminal=false
+Working Directory=
+isExecutable=true
+
+[MakeBuilder]
+Number Of Jobs=1
+Su Command=1

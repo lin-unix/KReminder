@@ -1,0 +1,3 @@
+/home/steven/Documents/Projects/KReminder/build/CMakeFiles/KReminder.dir
+/home/steven/Documents/Projects/KReminder/build/CMakeFiles/KReminder_automoc.dir
+/home/steven/Documents/Projects/KReminder/build/CMakeFiles/uninstall.dir

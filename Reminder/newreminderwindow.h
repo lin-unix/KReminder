@@ -39,9 +39,6 @@ private:
     NewReminderWindowPrivate *const d;
 
     void setupObjects();
-    bool eventFilter(QObject *object, QEvent *event);
-    QTime setTime();
-    QDate setDate();
 
 private slots:
     void changeDateTime(bool checked);

@@ -18,6 +18,7 @@
 
 #include "kreminderbuttonbox.h"
 #include "Reminder/newreminderwindow.h"
+#include "Introduction/introwindow.h"
 
 #include <KDE/KLocale>
 #include <KDE/KGuiItem>
@@ -117,5 +118,8 @@ void KReminderButtonBox::next()
 void KReminderButtonBox::sendToMenu()
 {
     //Send the user back to the main menu
+    IntroWindow *mainMenu = new IntroWindow(0);
+
+	mainMenu->show();
     window()->close();
 }

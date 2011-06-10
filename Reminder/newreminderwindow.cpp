@@ -33,7 +33,6 @@
 #include <QtGui/QLabel>
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QVBoxLayout>
-#include <QtGui/QMouseEvent>
 #include <QtGui/QDesktopWidget>
 #include <QtGui/QLineEdit>
 #include <QtGui/QCalendarWidget>
@@ -93,7 +92,7 @@ void NewReminderWindow::setupObjects()
     d->calendarWidget = new QCalendarWidget(this);
     d->timeEdit = new QTimeEdit(QTime(12, 00), this);
 
-    d->dayRadio = new QRadioButton(i18n("24Hrs"));
+    d->dayRadio = new QRadioButton(i18n("24 Hours"));
     d->weekRadio = new QRadioButton(i18n("1 Week"));
     d->customRadio = new QRadioButton(i18n("Custom"));
 
@@ -102,6 +101,7 @@ void NewReminderWindow::setupObjects()
     connect(d->dayRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
     connect(d->weekRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
 
+    d->vWindowLayout->addSpacing(10);
     d->vWindowLayout->addWidget(headerLabel);
     headerWidget->setAlignment(Qt::AlignCenter);
 
@@ -136,7 +136,6 @@ void NewReminderWindow::setupObjects()
     d->descriptionWidget = new KRichTextWidget(this);
     d->descriptionWidget->setRichTextSupport(KRichTextWidget::FullSupport);
     d->descriptionWidget->createActions(actionCollection());
-    d->descriptionWidget->installEventFilter(this);
 
     d->vWindowLayout->addWidget(vDescriptionSeparator);
     d->vWindowLayout->addWidget(descriptionLabel);
@@ -153,58 +152,20 @@ NewReminderWindow::~NewReminderWindow()
     delete d;
 }
 
-bool NewReminderWindow::eventFilter(QObject *object, QEvent *event)
-{
-    if (object == d->descriptionWidget) {
-        if (event->type() == QEvent::FocusIn) {
-            return true;
-        } else if (event->type() == QEvent::FocusOut) {
-            if (d->descriptionWidget->document()->isEmpty()) {
-                ;
-            }
-
-            return true;
-        } else
-            return false;
-    } else {
-        // pass the event on to the parent class
-        return eventFilter(object, event);
-    }
-}
-
 void NewReminderWindow::changeDateTime(bool checked)
 {
-    QTime newTime = QTime::currentTime();
-
     if (checked) {
         if ((d->dayRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->weekRadio->isChecked())) {
             //25hrs
-            newTime.addSecs(90000);
-            d->timeEdit->setTime(newTime);
+            QTime newTime = QTime::currentTime();
+            d->timeEdit->setTime(newTime.addSecs(90000));
         } else if ((d->weekRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->dayRadio->isChecked())) {
             //1 week
-            ;
+            QDate newDate = QDate::currentDate();
+            d->calendarWidget->setSelectedDate(newDate.addDays(7));
         }
         else {
             //Error
         }
     }
-}
-
-QDate NewReminderWindow::setDate()
-{
-    QDate newDate = QDate::currentDate();
-
-    //newDate;
-
-    return newDate;
-}
-
-QTime NewReminderWindow::setTime()
-{
-    QTime newTime = QTime::currentTime();
-
-    //newTime;
-
-    return newTime;
 }

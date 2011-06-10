@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'newreminderwindow.h'
 **
-** Created: Wed Jun 1 20:44:04 2011
+** Created: Thu Jun 9 20:12:42 2011
 **      by: The Qt Meta Object Compiler version 62 (Qt 4.7.2)
 **
 ** WARNING! All changes made in this file will be lost!

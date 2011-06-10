@@ -35,3 +35,6 @@ isExecutable=true
 [MakeBuilder]
 Number Of Jobs=1
 Su Command=1
+
+[Project]
+VersionControlSupport=kdevgit

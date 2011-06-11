@@ -51,14 +51,18 @@ public:
     QWidget *mainWidget;
     QCalendarWidget *calendarWidget;
     QTimeEdit *timeEdit;
+
     QRadioButton *dayRadio;
     QRadioButton *weekRadio;
     QRadioButton *customRadio;
+
+	bool dayChecked;
 };
 
 NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d(new NewReminderWindowPrivate)
 {
     setCaption(i18n("Create a new reminder"));
+	d->dayChecked = false;
 
     setupObjects();
     setupGUI(Keys | Save | Create, "KReminderui.rc");
@@ -109,6 +113,7 @@ void NewReminderWindow::setupObjects()
     d->vWindowLayout->addWidget(hHeaderSeparator);
 
     d->timeEdit->setAlignment(Qt::AlignHCenter);
+	d->timeEdit->setTime(QTime::currentTime());
 
     hTimeLayout->addSpacing(70);
     hTimeLayout->addWidget(d->timeEdit);
@@ -154,15 +159,21 @@ NewReminderWindow::~NewReminderWindow()
 
 void NewReminderWindow::changeDateTime(bool checked)
 {
+	QDate newDate = QDate::currentDate();
+
     if (checked) {
         if ((d->dayRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->weekRadio->isChecked())) {
-            //25hrs
-            QTime newTime = QTime::currentTime();
-            d->timeEdit->setTime(newTime.addSecs(90000));
+            //24hrs
+            d->dayChecked = true;
+            d->calendarWidget->setSelectedDate(newDate.addDays(1));
         } else if ((d->weekRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->dayRadio->isChecked())) {
             //1 week
-            QDate newDate = QDate::currentDate();
-            d->calendarWidget->setSelectedDate(newDate.addDays(7));
+            if (d->dayChecked)
+				d->calendarWidget->setSelectedDate(newDate.addDays(6));
+			else
+				d->calendarWidget->setSelectedDate(newDate.addDays(7));
+
+			d->dayChecked = false;
         }
         else {
             //Error

@@ -361,6 +361,7 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o
  /usr/include/qt4/QtGui/QHBoxLayout
  /usr/include/qt4/QtGui/QLabel
  /usr/include/qt4/QtGui/QLineEdit
+ /usr/include/qt4/QtGui/QPalette
  /usr/include/qt4/QtGui/QRadioButton
  /usr/include/qt4/QtGui/QTimeEdit
  /usr/include/qt4/QtGui/QVBoxLayout

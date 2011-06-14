@@ -38,6 +38,7 @@
 #include <QtGui/QCalendarWidget>
 #include <QtGui/QRadioButton>
 #include <QtGui/QTimeEdit>
+#include <QtGui/QPalette>
 
 #include <QtCore/QTime>
 #include <QtCore/QDate>
@@ -76,26 +77,27 @@ void NewReminderWindow::setupObjects()
 {
     d->mainWidget = new QWidget();
     d->vWindowLayout = new QVBoxLayout();
+
+	QPalette lineEditPalette;
     QVBoxLayout *vCalendarLayout = new QVBoxLayout();
     QVBoxLayout *vOptionsLayout = new QVBoxLayout();
+	QVBoxLayout *vOptionsRadioLayout = new QVBoxLayout();
     QHBoxLayout *hMainWidgetLayout = new QHBoxLayout();
     QHBoxLayout *hTimeLayout = new QHBoxLayout();
-    QVBoxLayout *vOptionsRadioLayout = new QVBoxLayout();
-
-    KReminderButtonBox *buttonBoxWidget = new KReminderButtonBox(this);
-    QLineEdit *headerWidget = new QLineEdit(this);
-    QLabel *headerLabel = new QLabel(i18n("New Reminder:"), this);
-    QLabel *dateTimeLabel = new QLabel(i18n("Choose a Date and Time:"), this);
+	QLineEdit *reminderLineEdit = new QLineEdit(i18n("(Enter A Reminder Here)"), this);
     QLabel *descriptionLabel = new QLabel(i18n("Detailed Description (optional):"), this);
+
+	KReminderButtonBox *buttonBoxWidget = new KReminderButtonBox(this);
     KSeparator *hHeaderSeparator = new KSeparator();
     KSeparator *hButtonBoxSeparator = new KSeparator();
     KSeparator *vDescriptionSeparator = new KSeparator();
     KSeparator *vMainWidgetSeparator = new KSeparator(Qt::Vertical);
-
     KButtonGroup *optionsButtonGroup = new KButtonGroup(this);
+
+	lineEditPalette.setColor(QPalette::Text, QColor(Qt::gray));
+
     d->calendarWidget = new QCalendarWidget(this);
     d->timeEdit = new QTimeEdit(QTime(12, 00), this);
-
     d->dayRadio = new QRadioButton(i18n("24 Hours"));
     d->weekRadio = new QRadioButton(i18n("1 Week"));
     d->customRadio = new QRadioButton(i18n("Custom"));
@@ -104,12 +106,12 @@ void NewReminderWindow::setupObjects()
 
     connect(d->dayRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
     connect(d->weekRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
+	connect(reminderLineEdit, SIGNAL(), this, SLOT());
 
-    d->vWindowLayout->addSpacing(10);
-    d->vWindowLayout->addWidget(headerLabel);
-    headerWidget->setAlignment(Qt::AlignCenter);
+	reminderLineEdit->setPalette(lineEditPalette);
+    reminderLineEdit->setAlignment(Qt::AlignCenter);
 
-    d->vWindowLayout->addWidget(headerWidget);
+    d->vWindowLayout->addWidget(reminderLineEdit);
     d->vWindowLayout->addWidget(hHeaderSeparator);
 
     d->timeEdit->setAlignment(Qt::AlignHCenter);
@@ -119,7 +121,6 @@ void NewReminderWindow::setupObjects()
     hTimeLayout->addWidget(d->timeEdit);
     hTimeLayout->addSpacing(70);
 
-    vCalendarLayout->addWidget(dateTimeLabel);
     vCalendarLayout->addWidget(d->calendarWidget);
     vCalendarLayout->addLayout(hTimeLayout);
 

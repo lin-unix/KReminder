@@ -360,6 +360,7 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGu
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QHBoxLayout
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QLabel
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QLineEdit
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QPalette
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QRadioButton
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QTimeEdit
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QVBoxLayout

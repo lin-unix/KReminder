@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'kreminderbuttonbox.h'
 **
-** Created: Fri Jun 10 21:35:02 2011
+** Created: Tue Jun 21 22:56:04 2011
 **      by: The Qt Meta Object Compiler version 62 (Qt 4.7.2)
 **
 ** WARNING! All changes made in this file will be lost!
@@ -23,7 +23,7 @@ static const uint qt_meta_data_KReminderButtonBox[] = {
        5,       // revision
        0,       // classname
        0,    0, // classinfo
-       5,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -36,6 +36,7 @@ static const uint qt_meta_data_KReminderButtonBox[] = {
       80,   20,   19,   19, 0x08,
      106,   19,   19,   19, 0x08,
      113,   19,   19,   19, 0x08,
+     126,   19,   19,   19, 0x08,
 
        0        // eod
 };
@@ -45,7 +46,7 @@ static const char qt_meta_stringdata_KReminderButtonBox[] = {
     "setAddReminderToolTip(bool)\0"
     "setAddNoteToolTip(bool)\0"
     "setConfigureToolTip(bool)\0next()\0"
-    "sendToMenu()\0"
+    "sendToMenu()\0saveReminder()\0"
 };
 
 const QMetaObject KReminderButtonBox::staticMetaObject = {
@@ -82,9 +83,10 @@ int KReminderButtonBox::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         case 2: setConfigureToolTip((*reinterpret_cast< bool(*)>(_a[1]))); break;
         case 3: next(); break;
         case 4: sendToMenu(); break;
+        case 5: saveReminder(); break;
         default: ;
         }
-        _id -= 5;
+        _id -= 6;
     }
     return _id;
 }

@@ -41,6 +41,7 @@ private slots:
     void setConfigureToolTip(bool checked);
     void next();
     void sendToMenu();
+	void saveReminder();
 };
 
 #endif // KREMINDERBUTTONBOX_H

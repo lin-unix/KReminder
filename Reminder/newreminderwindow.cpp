@@ -27,6 +27,7 @@
 #include <KDE/KRichTextWidget>
 #include <KDE/KActionCollection>
 #include <KDE/KButtonGroup>
+#include <KDE/KLineEdit>
 
 #include <QtGui/QApplication>
 #include <QtGui/QWidget>
@@ -34,14 +35,13 @@
 #include <QtGui/QHBoxLayout>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QDesktopWidget>
-#include <QtGui/QLineEdit>
 #include <QtGui/QCalendarWidget>
 #include <QtGui/QRadioButton>
 #include <QtGui/QTimeEdit>
-#include <QtGui/QPalette>
 
 #include <QtCore/QTime>
 #include <QtCore/QDate>
+#include <QtCore/QDebug>
 
 class NewReminderWindowPrivate
 {
@@ -78,13 +78,12 @@ void NewReminderWindow::setupObjects()
     d->mainWidget = new QWidget();
     d->vWindowLayout = new QVBoxLayout();
 
-	QPalette lineEditPalette;
     QVBoxLayout *vCalendarLayout = new QVBoxLayout();
     QVBoxLayout *vOptionsLayout = new QVBoxLayout();
 	QVBoxLayout *vOptionsRadioLayout = new QVBoxLayout();
     QHBoxLayout *hMainWidgetLayout = new QHBoxLayout();
     QHBoxLayout *hTimeLayout = new QHBoxLayout();
-	QLineEdit *reminderLineEdit = new QLineEdit(i18n("(Enter A Reminder Here)"), this);
+	KLineEdit *reminderLineEdit = new KLineEdit(this);
     QLabel *descriptionLabel = new QLabel(i18n("Detailed Description (optional):"), this);
 
 	KReminderButtonBox *buttonBoxWidget = new KReminderButtonBox(this);
@@ -94,22 +93,19 @@ void NewReminderWindow::setupObjects()
     KSeparator *vMainWidgetSeparator = new KSeparator(Qt::Vertical);
     KButtonGroup *optionsButtonGroup = new KButtonGroup(this);
 
-	lineEditPalette.setColor(QPalette::Text, QColor(Qt::gray));
-
     d->calendarWidget = new QCalendarWidget(this);
     d->timeEdit = new QTimeEdit(QTime(12, 00), this);
     d->dayRadio = new QRadioButton(i18n("24 Hours"));
     d->weekRadio = new QRadioButton(i18n("1 Week"));
     d->customRadio = new QRadioButton(i18n("Custom"));
 
+	d->customRadio->setFocus(Qt::ActiveWindowFocusReason);
     d->customRadio->setChecked(true);
 
     connect(d->dayRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
     connect(d->weekRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
-	connect(reminderLineEdit, SIGNAL(), this, SLOT());
 
-	reminderLineEdit->setPalette(lineEditPalette);
-    reminderLineEdit->setAlignment(Qt::AlignCenter);
+	reminderLineEdit->setClickMessage(i18n("Enter A Reminder Here"));
 
     d->vWindowLayout->addWidget(reminderLineEdit);
     d->vWindowLayout->addWidget(hHeaderSeparator);
@@ -181,3 +177,4 @@ void NewReminderWindow::changeDateTime(bool checked)
         }
     }
 }
+

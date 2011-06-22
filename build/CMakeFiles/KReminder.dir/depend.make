@@ -282,6 +282,7 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: ../Reminder/newremind
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/Qt3Support/q3cstring.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/Qt3Support/q3valuelist.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/QDate
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/QDebug
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/QEvent
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/QPoint
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/QPointF
@@ -316,10 +317,12 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCo
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qbytearray.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qchar.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qconfig.h
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qcontiguouscache.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qcoreapplication.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qcoreevent.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qdatastream.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qdatetime.h
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qdebug.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qeventloop.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qfeatures.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qglobal.h
@@ -352,6 +355,8 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCo
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qstringbuilder.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qstringlist.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qstringmatcher.h
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qtextcodec.h
+CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qtextstream.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qvariant.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtCore/qvector.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QApplication
@@ -359,8 +364,6 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGu
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QDesktopWidget
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QHBoxLayout
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QLabel
-CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QLineEdit
-CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QPalette
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QRadioButton
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QTimeEdit
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/QVBoxLayout
@@ -388,7 +391,6 @@ CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGu
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qlabel.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qlayout.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qlayoutitem.h
-CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qlineedit.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qmacdefines_mac.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qmatrix.h
 CMakeFiles/KReminder.dir/Reminder/newreminderwindow.cpp.o: /usr/include/qt4/QtGui/qmime.h

@@ -56,7 +56,7 @@ void KReminderButtonBox::setupObjects()
 
         setAddReminderToolTip(true);
     } else if (d->name->compare("NewReminderWindow", Qt::CaseInsensitive) == 0) {
-        d->okButton = addButton(KStandardGuiItem::ok(), AcceptRole, this, SLOT(next()));
+        d->okButton = addButton(KStandardGuiItem::ok(), AcceptRole, this, SLOT(saveReminder()));
         d->mainMenuButton = addButton("Main Menu", AcceptRole, this, SLOT(sendToMenu()));
         d->closeButton = addButton(KStandardGuiItem::close(), AcceptRole, parentWidget(), SLOT(close()));
     }
@@ -122,4 +122,10 @@ void KReminderButtonBox::sendToMenu()
 
 	mainMenu->show();
     window()->close();
+}
+
+void KReminderButtonBox::saveReminder()
+{
+	//Save information and start the reminder daemon
+	window()->close();
 }

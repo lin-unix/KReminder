@@ -1,2 +1,0 @@
-/usr/local/bin/KReminder
-/usr/local/share/apps/KReminder/KReminderui.rc

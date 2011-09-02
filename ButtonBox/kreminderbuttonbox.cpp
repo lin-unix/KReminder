@@ -20,6 +20,8 @@
 #include "Reminder/newreminderwindow.h"
 #include "Introduction/introwindow.h"
 
+#include <sys/stat.h>
+
 #include <KDE/KLocale>
 #include <KDE/KGuiItem>
 #include <KDE/KPushButton>
@@ -136,8 +138,31 @@ void KReminderButtonBox::sendToMenu()
 void KReminderButtonBox::saveReminder()
 {
     KProcess *SystemCall = new KProcess(this);
+    struct stat info;
     
-    //TODO:Search for a user's fcrontab file, open it, append the new job, close the file
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("-v"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+      default: {}
+    }
+    
+    //if == 0 then file exists
+    stat("/usr/local/etc/fcron.allow", &info);
+    stat("/usr/local/etc/fcron.deny", &info);
+    
+    //fcrontab -l >> ~/Desktop/help
+    //if empty, create new fcrontab file for user
+    //if there is something written then append the new job
     
     switch(SystemCall->execute(QString("fcrontab"), QStringList("/home/steven/Desktop/myfcrontab"), -1)) {
       case -1: {

@@ -23,8 +23,10 @@
 #include <KDE/KLocale>
 #include <KDE/KGuiItem>
 #include <KDE/KPushButton>
+#include <KDE/KProcess>
 
 #include <QtCore/QString>
+#include <QtCore/QStringList>
 #include <QtGui/QPushButton>
 
 class KReminderButtonBoxPrivate
@@ -45,6 +47,7 @@ KReminderButtonBox::KReminderButtonBox(QWidget *parent) : KDialogButtonBox(paren
 {
     d->name = new QString(parent->metaObject()->className());
     d->optionSelected = 0;
+    
     setupObjects();
 }
 
@@ -115,17 +118,43 @@ void KReminderButtonBox::next()
     window()->close();
 }
 
+/*
+ * Send the user back to the main menu
+ */
 void KReminderButtonBox::sendToMenu()
 {
     //Send the user back to the main menu
     IntroWindow *mainMenu = new IntroWindow(0);
 
-	mainMenu->show();
+    mainMenu->show();
     window()->close();
 }
 
+/*
+ * Save information and start the reminder daemon
+ */
 void KReminderButtonBox::saveReminder()
 {
-	//Save information and start the reminder daemon
+    KProcess *SystemCall = new KProcess(this);
+    
+    //TODO:Search for a user's fcrontab file, open it, append the new job, close the file
+    
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("/home/steven/Desktop/myfcrontab"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+      default: {
+	sendToMenu();
 	window()->close();
+      }
+    }
 }

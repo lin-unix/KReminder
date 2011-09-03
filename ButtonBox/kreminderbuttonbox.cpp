@@ -153,16 +153,39 @@ void KReminderButtonBox::saveReminder()
 	//Fcron error code
 	  ;
       }
-      default: {}
+      default: {
+	//Error - install fcron? close program with error message?
+      }
     }
     
-    //if == 0 then file exists
-    stat("/usr/local/etc/fcron.allow", &info);
-    stat("/usr/local/etc/fcron.deny", &info);
+    if(stat("/usr/local/etc/fcron.deny", &info)) {
+      if() //if the current user is in this list
+	; //error message - need admin rights to remove user from list
+    }
+    else if(stat("/usr/local/etc/fcron.allow", &info)) {
+      if() //if the current user is *not* in this list
+	; //error message - need admin rights to add user to list
+    }
     
-    //fcrontab -l >> ~/Desktop/help
-    //if empty, create new fcrontab file for user
-    //if there is something written then append the new job
+    
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("-l >> ~/Desktop/help"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+      default: {
+	//if empty, create new fcrontab file for user
+	//if there is something written then append the new job
+      }
+    }
     
     switch(SystemCall->execute(QString("fcrontab"), QStringList("/home/steven/Desktop/myfcrontab"), -1)) {
       case -1: {

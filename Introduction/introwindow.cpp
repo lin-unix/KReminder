@@ -17,11 +17,14 @@
  */
 
 #include "introwindow.h"
-#include "ButtonBox/kreminderbuttonbox.h"
+#include "Reminder/newreminderwindow.h"
 
 #include <KDE/KLocale>
 #include <KDE/KSeparator>
 #include <KDE/KIconLoader>
+#include <KDE/KDialogButtonBox>
+#include <KDE/KStandardGuiItem>
+#include <KDE/KPushButton>
 
 #include <QtGui/QRadioButton>
 #include <QtGui/QVBoxLayout>
@@ -30,7 +33,16 @@
 #include <QtGui/QWidget>
 #include <QtGui/QDesktopWidget>
 
-IntroWindow::IntroWindow(QWidget *parent) : KXmlGuiWindow(parent)
+class IntroWindowPrivate
+{
+public:
+    KPushButton *nextButton;
+    KPushButton *closeButton;
+    
+    int optionSelected;
+};
+
+IntroWindow::IntroWindow(QWidget *parent) : KXmlGuiWindow(parent), d(new IntroWindowPrivate)
 {
     KIconLoader *loader = KIconLoader::global();
     setWindowIcon(loader->loadIcon("view-calendar-tasks", KIconLoader::Small));
@@ -51,11 +63,10 @@ void IntroWindow::setupObjects()
 
     QRadioButton *addReminderRadio = new QRadioButton(i18n("Add New Reminder"));
     QRadioButton *addNoteRadio = new QRadioButton(i18n("Add New Note"));
-    QRadioButton *configureRadio = new QRadioButton(i18n("Configure KReminder"));
 
     addReminderRadio->setChecked(true);
 
-    KReminderButtonBox *buttonBoxWidget = new KReminderButtonBox(this);
+    KDialogButtonBox *buttonBoxWidget = new KDialogButtonBox(this);
     KSeparator *hSeparator = new KSeparator();
 
     QVBoxLayout *vWindowLayout = new QVBoxLayout;
@@ -63,10 +74,14 @@ void IntroWindow::setupObjects()
     QVBoxLayout *vButtonGroupLayout = new QVBoxLayout;
     QVBoxLayout *vPixmapLayout = new QVBoxLayout;
 
+    d->nextButton = buttonBoxWidget->addButton(KStandardGuiItem::forward(), KDialogButtonBox::AcceptRole, this, SLOT(next()));
+    d->closeButton = buttonBoxWidget->addButton(KStandardGuiItem::close(), KDialogButtonBox::AcceptRole, parentWidget(), SLOT(close()));
+    
+    setAddReminderToolTip(true);
+    
     vWindowLayout->insertSpacing(0, 5);
     vButtonGroupLayout->addWidget(addReminderRadio);
     vButtonGroupLayout->addWidget(addNoteRadio);
-    vButtonGroupLayout->addWidget(configureRadio);
 
     hMainWidgetsLayout->insertStretch(0, 1);
     hMainWidgetsLayout->addLayout(vButtonGroupLayout);
@@ -88,12 +103,51 @@ void IntroWindow::setupObjects()
     vWindowLayout->addWidget(hSeparator);
     vWindowLayout->addWidget(buttonBoxWidget);
 
-    connect(addReminderRadio, SIGNAL(clicked(bool)), buttonBoxWidget, SLOT(setAddReminderToolTip(bool)));
-    connect(addNoteRadio, SIGNAL(clicked(bool)), buttonBoxWidget, SLOT(setAddNoteToolTip(bool)));
-    connect(configureRadio, SIGNAL(clicked(bool)), buttonBoxWidget, SLOT(setConfigureToolTip(bool)));
+    connect(addReminderRadio, SIGNAL(clicked(bool)), this, SLOT(setAddReminderToolTip(bool)));
+    connect(addNoteRadio, SIGNAL(clicked(bool)), this, SLOT(setAddNoteToolTip(bool)));
+    
+    connect(d->closeButton, SIGNAL(clicked(bool)), this, SLOT(close()));
 
     mainWidget->setLayout(vWindowLayout);
     setCentralWidget(mainWidget);
 }
 
-IntroWindow::~IntroWindow() {}
+IntroWindow::~IntroWindow()
+{
+    delete d;
+}
+
+void IntroWindow::setAddReminderToolTip(bool checked)
+{
+    if (checked) {
+        d->nextButton->setToolTip(i18n("Create a new reminder"));
+        d->nextButton->setWhatsThis(i18n("Choose this if you want to setup a new reminder"));
+	
+	d->optionSelected = 0;
+    }
+}
+
+void IntroWindow::setAddNoteToolTip(bool checked)
+{
+    if (checked) {
+        d->nextButton->setToolTip(i18n("Pencil in a new note"));
+        d->nextButton->setWhatsThis(i18n("Choose this if you want to create a new note"));
+	
+	d->optionSelected = 1;
+    }
+}
+
+void IntroWindow::next()
+{
+    if (d->optionSelected == 0) {
+        NewReminderWindow *optionWindow = new NewReminderWindow(0);
+        optionWindow->show();
+    } else if (d->optionSelected == 1) {
+        //NewNote *optionWindow = new NewNote(parentWidget());
+        //optionWindow->show();
+    } else {
+        ; //Error
+    }
+
+    window()->close();
+}

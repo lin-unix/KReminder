@@ -17,8 +17,9 @@
  */
 
 #include "newreminderwindow.h"
-#include "ButtonBox/kreminderbuttonbox.h"
+#include "Introduction/introwindow.h"
 
+#include <KDE/KDialogButtonBox>
 #include <KDE/KLocale>
 #include <KDE/KPushButton>
 #include <KDE/KIconLoader>
@@ -28,6 +29,9 @@
 #include <KDE/KActionCollection>
 #include <KDE/KButtonGroup>
 #include <KDE/KLineEdit>
+#include <KDE/KUser>
+#include <KDE/KProcess>
+#include <KDE/KStandardGuiItem>
 
 #include <QtGui/QApplication>
 #include <QtGui/QWidget>
@@ -39,9 +43,12 @@
 #include <QtGui/QRadioButton>
 #include <QtGui/QTimeEdit>
 
+#include <QtCore/QDebug>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QString>
 #include <QtCore/QTime>
 #include <QtCore/QDate>
-#include <QtCore/QDebug>
 
 class NewReminderWindowPrivate
 {
@@ -57,13 +64,13 @@ public:
     QRadioButton *weekRadio;
     QRadioButton *customRadio;
 
-	bool dayChecked;
+    bool dayChecked;
 };
 
 NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d(new NewReminderWindowPrivate)
 {
     setCaption(i18n("Create a new reminder"));
-	d->dayChecked = false;
+    d->dayChecked = false;
 
     setupObjects();
     setupGUI(Keys | Save | Create, "KReminderui.rc");
@@ -80,13 +87,13 @@ void NewReminderWindow::setupObjects()
 
     QVBoxLayout *vCalendarLayout = new QVBoxLayout();
     QVBoxLayout *vOptionsLayout = new QVBoxLayout();
-	QVBoxLayout *vOptionsRadioLayout = new QVBoxLayout();
+    QVBoxLayout *vOptionsRadioLayout = new QVBoxLayout();
     QHBoxLayout *hMainWidgetLayout = new QHBoxLayout();
     QHBoxLayout *hTimeLayout = new QHBoxLayout();
-	KLineEdit *reminderLineEdit = new KLineEdit(this);
+    KLineEdit *reminderLineEdit = new KLineEdit(this);
     QLabel *descriptionLabel = new QLabel(i18n("Detailed Description (optional):"), this);
 
-	KReminderButtonBox *buttonBoxWidget = new KReminderButtonBox(this);
+    KDialogButtonBox *buttonBoxWidget = new KDialogButtonBox(this);
     KSeparator *hHeaderSeparator = new KSeparator();
     KSeparator *hButtonBoxSeparator = new KSeparator();
     KSeparator *vDescriptionSeparator = new KSeparator();
@@ -99,19 +106,23 @@ void NewReminderWindow::setupObjects()
     d->weekRadio = new QRadioButton(i18n("1 Week"));
     d->customRadio = new QRadioButton(i18n("Custom"));
 
-	d->customRadio->setFocus(Qt::ActiveWindowFocusReason);
+    d->customRadio->setFocus(Qt::ActiveWindowFocusReason);
     d->customRadio->setChecked(true);
+
+    buttonBoxWidget->addButton(KStandardGuiItem::ok(), KDialogButtonBox::AcceptRole, this, SLOT(saveReminder()));
+    buttonBoxWidget->addButton("Main Menu", KDialogButtonBox::AcceptRole, this, SLOT(sendToMenu()));
+    buttonBoxWidget->addButton(KStandardGuiItem::close(), KDialogButtonBox::AcceptRole, parentWidget(), SLOT(close()));
 
     connect(d->dayRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
     connect(d->weekRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
 
-	reminderLineEdit->setClickMessage(i18n("Enter A Reminder Here"));
+    reminderLineEdit->setClickMessage(i18n("Enter A Reminder Here"));
 
     d->vWindowLayout->addWidget(reminderLineEdit);
     d->vWindowLayout->addWidget(hHeaderSeparator);
 
     d->timeEdit->setAlignment(Qt::AlignHCenter);
-	d->timeEdit->setTime(QTime::currentTime());
+    d->timeEdit->setTime(QTime::currentTime());
 
     hTimeLayout->addSpacing(70);
     hTimeLayout->addWidget(d->timeEdit);
@@ -156,7 +167,7 @@ NewReminderWindow::~NewReminderWindow()
 
 void NewReminderWindow::changeDateTime(bool checked)
 {
-	QDate newDate = QDate::currentDate();
+    QDate newDate = QDate::currentDate();
 
     if (checked) {
         if ((d->dayRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->weekRadio->isChecked())) {
@@ -176,5 +187,101 @@ void NewReminderWindow::changeDateTime(bool checked)
             //Error
         }
     }
+}
+
+/*
+ * Save information and start the reminder daemon
+ */
+void NewReminderWindow::saveReminder()
+{
+    KProcess *SystemCall = new KProcess(this);
+    KUser currentUser;
+    QFile denyFile("/usr/local/etc/fcron.deny"), allowFile("/usr/local/etc/fcron.allow"), fcrontabFile("/home/" + currentUser.loginName() + "/.KReminter_fcrontab");
+    QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
+    QString line;
+    bool userDeny = false;
+
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+    }
+
+    if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+      while(!inputDenyFile.atEnd()) {
+	line = inputDenyFile.readLine();
+
+	if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) //if the current user is in this list
+	  ; //error message - need admin rights to remove user from list
+      }
+    }
+    else if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+      while(!inputAllowFile.atEnd()) {
+	line = inputAllowFile.readLine();
+
+	if(line.contains(currentUser.loginName(), Qt::CaseSensitive))
+	  userDeny = true;
+      }
+
+      if(!userDeny) //if the current user is *not* in this list
+	; //error message - need admin rights to add user to list
+    }
+
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("-l >> /home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+      default: {
+		fcrontabFile.open(QIODevice::WriteOnly | QIODevice::Text);
+		fcrontabFile.write("Hello"); //save reminder here
+      }
+    }
+
+    switch(SystemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
+      case -1: {
+	//Process crashed
+	  ;
+      }
+      case -2: {
+	//Process could not be started
+	  ;
+      }
+      case 1: {
+	//Fcron error code
+	  ;
+      }
+      default: {
+	window()->close();
+      }
+    }
+}
+
+/*
+ * Send the user back to the main menu
+ */
+void NewReminderWindow::sendToMenu()
+{
+    IntroWindow *mainMenu = new IntroWindow(0);
+
+    mainMenu->show();
+    window()->close();
 }
 

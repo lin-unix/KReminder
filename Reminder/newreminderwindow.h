@@ -21,10 +21,6 @@
 
 #include <KDE/KXmlGuiWindow>
 
-#include <QtCore/QEvent>
-#include <QtCore/QTime>
-#include <QtCore/QDate>
-
 class NewReminderWindowPrivate;
 
 class NewReminderWindow : public KXmlGuiWindow
@@ -42,6 +38,8 @@ private:
 
 private slots:
     void changeDateTime(bool checked);
+    void saveReminder();
+    void sendToMenu();
 };
 
 #endif // NEWREMINDERWINDOW_H

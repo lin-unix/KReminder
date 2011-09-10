@@ -21,6 +21,8 @@
 
 #include <KDE/KXmlGuiWindow>
 
+class IntroWindowPrivate;
+
 class IntroWindow : public KXmlGuiWindow
 {
     Q_OBJECT
@@ -30,7 +32,13 @@ public:
     virtual ~IntroWindow();
 
 private:
+    IntroWindowPrivate *const d;
     void setupObjects();
+    
+private slots:
+    void setAddReminderToolTip(bool checked);
+    void setAddNoteToolTip(bool checked);
+    void next();
 };
 
 #endif

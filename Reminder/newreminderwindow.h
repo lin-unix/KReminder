@@ -35,6 +35,7 @@ private:
     NewReminderWindowPrivate *const d;
 
     void setupObjects();
+	char *formatReminder();
 
 private slots:
     void changeDateTime(bool checked);

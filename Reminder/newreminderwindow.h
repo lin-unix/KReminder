@@ -21,6 +21,8 @@
 
 #include <KDE/KXmlGuiWindow>
 
+#include <QtCore/QFile>
+
 class NewReminderWindowPrivate;
 
 class NewReminderWindow : public KXmlGuiWindow
@@ -35,7 +37,8 @@ private:
     NewReminderWindowPrivate *const d;
 
     void setupObjects();
-	char *formatReminder();
+	const char *formatReminder(QString reminder);
+	bool writeReminder(QFile *fcrontabFile);
 
 private slots:
     void changeDateTime(bool checked);

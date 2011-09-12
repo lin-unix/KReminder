@@ -44,7 +44,7 @@
 #include <QtGui/QTimeEdit>
 
 #include <QtCore/QDebug>
-#include <QtCore/QFile>
+
 #include <QtCore/QTextStream>
 #include <QtCore/QString>
 #include <QtCore/QTime>
@@ -67,6 +67,9 @@ public:
 	bool dayChecked;
 };
 
+/*
+ * Set up the window
+ */
 NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d(new NewReminderWindowPrivate)
 {
 	setCaption(i18n("Create a new reminder"));
@@ -80,6 +83,9 @@ NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d
 	move(frameGeo.topLeft());
 }
 
+/*
+ * Set up the GUI
+ */
 void NewReminderWindow::setupObjects()
 {
 	d->mainWidget = new QWidget();
@@ -165,6 +171,9 @@ NewReminderWindow::~NewReminderWindow()
 	delete d;
 }
 
+/*
+ * Change the selected date on the calendar based on the radio button that the user selected
+ */
 void NewReminderWindow::changeDateTime(bool checked)
 {
 	QDate newDate = QDate::currentDate();
@@ -190,7 +199,7 @@ void NewReminderWindow::changeDateTime(bool checked)
 }
 
 /*
- * Save information and start the reminder daemon
+ * Save information in an fcrontab file, and tell fcrontab that a new task has been created
  */
 void NewReminderWindow::saveReminder()
 {
@@ -261,14 +270,30 @@ void NewReminderWindow::saveReminder()
 
 		default: {
 			//This creates a second fcrontab file that gets filled in, but not used later on
-			if(fcrontabFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-				if(fcrontabFile.write(formatReminder()) == -1) { //save reminder here
-					fcrontabFile.close();
-					; //write error
+			if (fcrontabFile.exists()) {
+				if (fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
+					if (((fcrontabFile.readAll()).trimmed()).isEmpty()) {
+						if (!writeReminder(&fcrontabFile)) {
+							fcrontabFile.close(); //write error
+						}
+
+						fcrontabFile.close();
+					} else {
+						fcrontabFile.close();
+
+						if (fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
+							if (!writeReminder(&fcrontabFile)) {
+								fcrontabFile.close(); //write error
+							}
+
+							fcrontabFile.close();
+						} else {
+							; //open error
+						}
+					}
+				} else {
+					; //open error
 				}
-			}
-			else {
-				; //open error
 			}
 		}
 	}
@@ -277,32 +302,31 @@ void NewReminderWindow::saveReminder()
 
 		case -1: {
 			//Process crashed
-			fcrontabFile.close();
 		}
 
 		case -2: {
 			//Process could not be started
-			fcrontabFile.close();
 		}
 
 		case 1: {
 			//Fcron error code
-			fcrontabFile.close();
 		}
 
 		default: {
-			fcrontabFile.close();
+			if (!fcrontabFile.remove()) {
+				; //delete error
+			}
+
 			window()->close();
 		}
 	}
 }
 
 //TODO: add year
-//TODO: repeat reminder
-char *NewReminderWindow::formatReminder()
+//TODO: repeating reminders
+const char *NewReminderWindow::formatReminder(QString reminder)
 {
-	QString reminder = QString::number(d->timeEdit->time().minute());
-	QTextStream cout(stderr);
+	reminder = QString::number(d->timeEdit->time().minute()); //Minute
 
 	//Optional arguments may be added with a '&' prepended
 	//ie. run the command after the conditions are successfuly met five times: "&5, <min> <hr> <day-of-month> <month> <day-of-week> <command>"
@@ -318,9 +342,23 @@ char *NewReminderWindow::formatReminder()
 	reminder.append(" ");
 
 	reminder.append("* "); //Day of week
-	reminder.append("konsole"); //Command to run
+	reminder.append("konsole\n"); //Command to run
 
 	return reminder.toLocal8Bit().data();
+}
+
+/*
+ * Write the reminder to the fcrontab file
+ */
+bool NewReminderWindow::writeReminder(QFile *fcrontabFile)
+{
+	QString reminder;
+
+	if (!fcrontabFile->write(formatReminder(reminder))) {
+		return false; //write error
+	}
+
+	return true;
 }
 
 /*

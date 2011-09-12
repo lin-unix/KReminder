@@ -34,7 +34,7 @@ public:
 private:
     IntroWindowPrivate *const d;
     void setupObjects();
-    
+
 private slots:
     void setAddReminderToolTip(bool checked);
     void setAddNoteToolTip(bool checked);

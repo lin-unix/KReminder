@@ -22,6 +22,7 @@
 #include <KDE/KXmlGuiWindow>
 
 #include <QtCore/QFile>
+#include <QtCore/QTextStream>
 
 class NewReminderWindowPrivate;
 
@@ -36,9 +37,28 @@ public:
 private:
     NewReminderWindowPrivate *const d;
 
+	enum errorNumber {
+		windowClose = 0,
+		fcrontabFileOpen = 1,
+		writeReminderToFile = 2,
+		fileDelete = 3,
+		processCrashed = 4,
+		processNotStarted = 5,
+		fcronError = 6,
+		systemFunction = 7,
+		adminDenyFile = 8,
+		adminAllowFile = 9,
+		denyFileOpen = 10,
+		allowFileOpen = 11,
+		inputDenyRead = 12,
+		inputAllowRead = 13
+	};
+
     void setupObjects();
 	const char *formatReminder(QString reminder);
 	bool writeReminder(QFile *fcrontabFile);
+	bool checkPermissions();
+	void handleError(errorNumber error, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
 
 private slots:
     void changeDateTime(bool checked);

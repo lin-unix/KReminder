@@ -32,7 +32,10 @@
 #include <KDE/KUser>
 #include <KDE/KProcess>
 #include <KDE/KStandardGuiItem>
+#include <KDE/KGuiItem>
 #include <KDE/KMessageBox>
+#include <KDE/KDialog>
+#include <KDE/KIconLoader>
 
 #include <QtGui/QApplication>
 #include <QtGui/QWidget>
@@ -73,6 +76,8 @@ NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d
 {
 	setCaption(i18n("Create a new reminder"));
 	d->dayChecked = false;
+
+	handleError(fcrontabFileOpen);
 
 	setupObjects();
 	setupGUI(Keys | Save | Create, "KReminderui.rc");
@@ -390,19 +395,31 @@ void NewReminderWindow::sendToMenu()
 	}
 }
 
+//TODO: Save all errors to log file
+//TODO: Let the user report errors and give them the log file to attach to bug report
 void NewReminderWindow::handleError(errorNumber error, QFile::FileError fileError, QTextStream::Status textStreamError)
 {
-	KMessageBox *errorMessageBox;
+	KDialog *errorDialog = new KDialog(this);
+
+	errorDialog->setButtons(KDialog::User1 | KDialog::User2);
+	errorDialog->setDefaultButton(KDialog::User1);
+	errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString("Quit"), KIcon("application-exit", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
+	errorDialog->setModal(true);
+
+	connect(errorDialog, SIGNAL(user2Clicked()), this, SLOT(close()));
 
 	switch (error) {
 		case windowClose: {
-			//save information to log file
+			;
 		}
 		case fcrontabFileOpen: {
-			errorMessageBox->error(this, i18n("I couldn't open the file that I needed.\n\nI recommend reporting this error so my creator can find out how this happened"), i18n("Read Error"));
+			errorDialog->setCaption(i18n("Internal Error"));
+			errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
+			errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString("Report Error"), KIcon("tools-report-bug", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
+			errorDialog->show();
 		}
 		case writeReminderToFile: {
-			errorMessageBox->error(this, i18n("I couldn't open the file that I needed.\n\nI recommend reporting this error so my creator can find out how this happened"), i18n("Write Error"));
+			//i18n("Can't open the file that is needed to save your reminder.\n\nWould you like to report this error?"), i18n("Write Error"));
 		}
 		case fileDelete: {
 			;

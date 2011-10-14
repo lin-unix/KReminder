@@ -287,7 +287,6 @@ void NewReminderWindow::saveReminder()
 			}
 
 			if(!window()->close()) {
-				window()->hide();
 				handleError(windowClose);
 			}
 		}
@@ -390,7 +389,6 @@ void NewReminderWindow::sendToMenu()
 	mainMenu->show();
 
 	if(!window()->close()) {
-		window()->hide();
 		handleError(windowClose);
 	}
 }
@@ -404,58 +402,62 @@ void NewReminderWindow::handleError(errorNumber error, QFile::FileError fileErro
 	errorDialog->setButtons(KDialog::User1 | KDialog::User2);
 	errorDialog->setDefaultButton(KDialog::User1);
 	errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString("Quit"), KIcon("application-exit", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
+	errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString("Report Error"), KIcon("tools-report-bug", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
+
+	errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
+	errorDialog->setCaption(i18n("Internal Error"));
 	errorDialog->setModal(true);
 
 	connect(errorDialog, SIGNAL(user2Clicked()), this, SLOT(close()));
 
 	switch (error) {
 		case windowClose: {
-			;
+			window()->hide();
+			break;
 		}
 		case fcrontabFileOpen: {
-			errorDialog->setCaption(i18n("Internal Error"));
-			errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
-			errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString("Report Error"), KIcon("tools-report-bug", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
-			errorDialog->show();
+			break;
 		}
 		case writeReminderToFile: {
-			//i18n("Can't open the file that is needed to save your reminder.\n\nWould you like to report this error?"), i18n("Write Error"));
+			break;
 		}
 		case fileDelete: {
-			;
+			break;
 		}
 		case processCrashed: {
-			;
+			break;
 		}
 		case processNotStarted: {
-			;
+			break;
 		}
 		case fcronError: {
-			;
+			break;
 		}
 		case systemFunction: {
-			;
+			break;
 		}
 		case adminDenyFile: {
-			;
+			break; // Ask for root access
 		}
 		case adminAllowFile: {
-			;
+			break; // Ask for root access
 		}
 		case denyFileOpen: {
-			;
+			break;
 		}
 		case allowFileOpen: {
-			;
+			break;
 		}
 		case inputDenyRead: {
-			;
+			break;
 		}
 		case inputAllowRead: {
-			;
+			break;
 		}
 		default: {
 			; //why would this be run? Save to log if this happens
 		}
 	}
+
+	errorDialog->show();
 }

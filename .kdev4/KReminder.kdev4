@@ -33,6 +33,8 @@ Working Directory=
 isExecutable=true
 
 [MakeBuilder]
+Default Make Environment Profile=0
+Install As Root=true
 Number Of Jobs=1
 Su Command=1
 

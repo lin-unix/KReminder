@@ -18,6 +18,7 @@
 
 #include "newreminderwindow.h"
 #include "Introduction/introwindow.h"
+#include "ErrorHandling/errorhandling.h"
 
 #include <KDE/KDialogButtonBox>
 #include <KDE/KLocale>
@@ -34,7 +35,6 @@
 #include <KDE/KStandardGuiItem>
 #include <KDE/KGuiItem>
 #include <KDE/KMessageBox>
-#include <KDE/KDialog>
 #include <KDE/KIconLoader>
 
 #include <QtGui/QApplication>
@@ -54,7 +54,6 @@
 
 class NewReminderWindowPrivate
 {
-
 public:
 	KRichTextWidget *descriptionWidget;
 	QVBoxLayout *vWindowLayout;
@@ -67,6 +66,7 @@ public:
 	QRadioButton *customRadio;
 
 	bool dayChecked;
+	ErrorHandling *errorCall;
 };
 
 /*
@@ -76,8 +76,7 @@ NewReminderWindow::NewReminderWindow(QWidget *parent) : KXmlGuiWindow(parent), d
 {
 	setCaption(i18n("Create a new reminder"));
 	d->dayChecked = false;
-
-	handleError(fcrontabFileOpen);
+	d->errorCall = new ErrorHandling(this);
 
 	setupObjects();
 	setupGUI(Keys | Save | Create, "KReminderui.rc");
@@ -212,30 +211,33 @@ void NewReminderWindow::saveReminder()
 	switch (systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
 
 		case -1: {
-			handleError(processCrashed); //Process crashed
+			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
 		}
 
 		case -2: {
-			handleError(processNotStarted); //Process could not be started
+			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
 		}
 
 		case 1: {
-			handleError(fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
 	}
 
-	if(!checkPermissions())
-		handleError(adminAllowFile); //error message - need admin rights to change permissions
+	if(!checkDenyPermissions())
+		d->errorCall->handleError(ErrorHandling::adminDenyFile); //error message - need admin rights to change permissions
+	
+	if(!checkAllowPermissions())
+		d->errorCall->handleError(ErrorHandling::adminAllowFile); //error message - need admin rights to change permissions
 
 	//Tell fcrontab to pipe the user's current fcrontab file in to a temporary file
 	switch (system(cmdInput->toLocal8Bit().constData())) {
 
 		case -1: {
-			handleError(systemFunction); //general error
+			d->errorCall->handleError(ErrorHandling::systemFunction); //general error
 		}
 
 		case 1: {
-			handleError(fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
 
 		default: { //Open the new temporary copy of the user's fcrontab file
@@ -243,7 +245,7 @@ void NewReminderWindow::saveReminder()
 				if (((fcrontabFile.readAll()).trimmed()).isEmpty()) {
 					if (!writeReminder(&fcrontabFile)) {
 						fcrontabFile.close(); //write error
-						handleError(writeReminderToFile, fcrontabFile.error());
+						d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
 					}
 
 					fcrontabFile.close();
@@ -253,16 +255,16 @@ void NewReminderWindow::saveReminder()
 					if (fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
 						if (!writeReminder(&fcrontabFile)) {
 							fcrontabFile.close(); //write error
-							handleError(writeReminderToFile, fcrontabFile.error());
+							d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
 						}
 
 						fcrontabFile.close();
 					} else {
-						handleError(fcrontabFileOpen, fcrontabFile.error()); //open error
+						d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
 					}
 				}
 			} else {
-				handleError(fcrontabFileOpen, fcrontabFile.error()); //open error
+				d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
 			}
 		}
 	}
@@ -270,33 +272,33 @@ void NewReminderWindow::saveReminder()
 	switch (systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
 
 		case -1: {
-			handleError(processCrashed); //Process crashed
+			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
 		}
 
 		case -2: {
-			handleError(processNotStarted); //Process could not be started
+			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
 		}
 
 		case 1: {
-			handleError(fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
 
 		default: {
 			if (!fcrontabFile.remove()) {
-				handleError(fileDelete, fcrontabFile.error()); //delete error
+				d->errorCall->handleError(ErrorHandling::fileDelete, fcrontabFile.error()); //delete error
 			}
 
 			if(!window()->close()) {
-				handleError(windowClose);
+				d->errorCall->handleError(ErrorHandling::windowClose);
 			}
 		}
 	}
 }
 
-bool NewReminderWindow::checkPermissions()
+bool NewReminderWindow::checkDenyPermissions()
 {
-	QFile denyFile("/usr/local/etc/fcron.deny"), allowFile("/usr/local/etc/fcron.allow");
-	QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
+	QFile denyFile("/usr/local/etc/fcron.deny");
+	QTextStream inputDenyFile(&denyFile);
 	QString line;
 	KUser currentUser;
 
@@ -304,8 +306,10 @@ bool NewReminderWindow::checkPermissions()
 		while (!inputDenyFile.atEnd()) {
 			line = inputDenyFile.readLine();
 
-			if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError))
-				handleError(inputDenyRead, denyFile.error(), inputDenyFile.status());
+			if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
+				denyFile.close();
+				d->errorCall->handleError(ErrorHandling::inputDenyRead, denyFile.error(), inputDenyFile.status());
+			}
 
 			if (line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
 				denyFile.close();
@@ -316,26 +320,38 @@ bool NewReminderWindow::checkPermissions()
 		denyFile.close();
 	}
 	else {
-		handleError(denyFileOpen, denyFile.error(), QTextStream::Ok);
+		d->errorCall->handleError(ErrorHandling::denyFileOpen, denyFile.error(), QTextStream::Ok);
 	}
+
+	return false;
+}
+
+bool NewReminderWindow::checkAllowPermissions()
+{
+	QFile allowFile("/usr/local/etc/fcron.allow");
+	QTextStream inputAllowFile(&allowFile);
+	QString line;
+	KUser currentUser;
 
 	if (allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		while (!inputAllowFile.atEnd()) {
 			line = inputAllowFile.readLine();
 
-			if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError))
-				handleError(inputAllowRead, QFile::NoError, inputAllowFile.status());
+			if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
+				allowFile.close();
+				d->errorCall->handleError(ErrorHandling::inputAllowRead, QFile::NoError, inputAllowFile.status());
+			}
 			else if (line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
 				allowFile.close();
-				return false;
+				return true; //Found the user's username
 			}
 		}
 
 		allowFile.close();
-		return true;
+		return false;  //The allow file did not have the user's username listed
 	}
 	else {
-		handleError(allowFileOpen);
+		d->errorCall->handleError(ErrorHandling::allowFileOpen);
 	}
 
 	return false;
@@ -389,75 +405,6 @@ void NewReminderWindow::sendToMenu()
 	mainMenu->show();
 
 	if(!window()->close()) {
-		handleError(windowClose);
+		d->errorCall->handleError(ErrorHandling::windowClose);
 	}
-}
-
-//TODO: Save all errors to log file
-//TODO: Let the user report errors and give them the log file to attach to bug report
-void NewReminderWindow::handleError(errorNumber error, QFile::FileError fileError, QTextStream::Status textStreamError)
-{
-	KDialog *errorDialog = new KDialog(this);
-
-	errorDialog->setButtons(KDialog::User1 | KDialog::User2);
-	errorDialog->setDefaultButton(KDialog::User1);
-	errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString("Quit"), KIcon("application-exit", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
-	errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString("Report Error"), KIcon("tools-report-bug", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
-
-	errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
-	errorDialog->setCaption(i18n("Internal Error"));
-	errorDialog->setModal(true);
-
-	connect(errorDialog, SIGNAL(user2Clicked()), this, SLOT(close()));
-
-	switch (error) {
-		case windowClose: {
-			window()->hide();
-			break;
-		}
-		case fcrontabFileOpen: {
-			break;
-		}
-		case writeReminderToFile: {
-			break;
-		}
-		case fileDelete: {
-			break;
-		}
-		case processCrashed: {
-			break;
-		}
-		case processNotStarted: {
-			break;
-		}
-		case fcronError: {
-			break;
-		}
-		case systemFunction: {
-			break;
-		}
-		case adminDenyFile: {
-			break; // Ask for root access
-		}
-		case adminAllowFile: {
-			break; // Ask for root access
-		}
-		case denyFileOpen: {
-			break;
-		}
-		case allowFileOpen: {
-			break;
-		}
-		case inputDenyRead: {
-			break;
-		}
-		case inputAllowRead: {
-			break;
-		}
-		default: {
-			; //why would this be run? Save to log if this happens
-		}
-	}
-
-	errorDialog->show();
 }

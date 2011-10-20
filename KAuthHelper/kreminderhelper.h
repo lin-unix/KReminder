@@ -20,8 +20,8 @@
 #ifndef KREMINDERHELPER_H
 #define KREMINDERHELPER_H
 
-#include <qt4/QtCore/QObject>
-#include <KDE/KAuth/ActionReply>
+#include <QtCore/QObject>
+#include <kauth.h>
 
 using namespace KAuth;
 

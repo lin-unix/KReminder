@@ -18,6 +18,8 @@
 
 #include "kreminderhelper.h"
 
+#include <KDE/KUser>
+
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 
@@ -25,21 +27,34 @@
 ActionReply KReminderHelper::IODeny(QVariantMap args)
 {
 	ActionReply reply;
-	QString filename = args["filename"].toString();
-	QFile file(filename);
-	QTextStream stream(&file);
-	QString contents;
+	KUser currentUser;
+	QString originalFilename = args["filename"].toString(), newFilename = "/home/" + currentUser.loginName() + "/.tempKReminderDeny";
+	QFile originalFile(originalFilename), newFile(newFilename);
+	QTextStream originalInputStream(&originalFile), newOutputStream(&newFile);
+	QString contents, line;
 
-	if(!file.open(QIODevice::ReadOnly)) {
+	if((!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) || (!newFile.open(QIODevice::WriteOnly | QIODevice::Text))) {
 		reply = ActionReply::HelperErrorReply;
-		reply.setErrorCode(file.error());
+		reply.setErrorCode(originalFile.error());
 
 		return reply;
 	}
+	
+	while (!originalInputStream.atEnd()) {
+		line = originalInputStream.readLine();
 
-	//Add code here
-	stream >> contents;
-	reply.data()["contents"] = contents;
+		if((line.isNull()) || (originalInputStream.status() != QTextStream::Ok) || (originalFile.error() != QFile::NoError)) {
+			originalFile.close();
+			newFile.close();
+			//handleError(originalInputStream, originalFile.error(), originalInputStream.status());
+		}
+
+		if (!line.contains(currentUser.loginName(), Qt::CaseSensitive)) //if the current user is not in this list
+			newFile.write(line.toLocal8Bit().constData());
+	}
+
+	originalFile.close();
+	newFile.close();
 
 	return reply;
 }
@@ -48,22 +63,19 @@ ActionReply KReminderHelper::IODeny(QVariantMap args)
 ActionReply KReminderHelper::IOAllow(QVariantMap args)
 {
 	ActionReply reply;
-	QString filename = args["filename"].toString();
-	QFile file(filename);
-	QTextStream stream(&file);
-	QString contents;
+	KUser currentUser;
+	QFile file(args["filename"].toString());
 
-	if(!file.open(QIODevice::ReadOnly)) {
+	if(!file.open(QIODevice::Append | QIODevice::Text)) {
 		reply = ActionReply::HelperErrorReply;
 		reply.setErrorCode(file.error());
 
 		return reply;
 	}
 
-	//Add code here
-	stream >> contents;
-	reply.data()["contents"] = contents;
-
+	file.write(currentUser.loginName().toLocal8Bit().constData());
+	file.close();
+	
 	return reply;
 }
 

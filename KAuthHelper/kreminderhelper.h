@@ -20,16 +20,15 @@
 #ifndef KREMINDERHELPER_H
 #define KREMINDERHELPER_H
 
-#include <QtCore/QObject>
 #include <kauth.h>
+
+#include <QtCore/QObject>
 
 using namespace KAuth;
 
 class KReminderHelper : public QObject
 {
-	Q_OBJECT
-
-public slots:
+private slots:
 	ActionReply IODeny(QVariantMap args);
 	ActionReply IOAllow(QVariantMap args);
 };

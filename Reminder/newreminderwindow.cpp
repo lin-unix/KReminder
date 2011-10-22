@@ -225,21 +225,18 @@ void NewReminderWindow::saveReminder()
 
 	if(!checkDenyPermissions())
 		d->errorCall->handleError(ErrorHandling::adminDenyFile); //error message - need admin rights to change permissions
-	
+
 	if(!checkAllowPermissions())
 		d->errorCall->handleError(ErrorHandling::adminAllowFile); //error message - need admin rights to change permissions
 
 	//Tell fcrontab to pipe the user's current fcrontab file in to a temporary file
 	switch (system(cmdInput->toLocal8Bit().constData())) {
-
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::systemFunction); //general error
 		}
-
 		case 1: {
 			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
-
 		default: { //Open the new temporary copy of the user's fcrontab file
 			if (fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
 				if (((fcrontabFile.readAll()).trimmed()).isEmpty()) {
@@ -270,19 +267,15 @@ void NewReminderWindow::saveReminder()
 	}
 
 	switch (systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
-
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
 		}
-
 		case -2: {
 			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
 		}
-
 		case 1: {
 			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
-
 		default: {
 			if (!fcrontabFile.remove()) {
 				d->errorCall->handleError(ErrorHandling::fileDelete, fcrontabFile.error()); //delete error
@@ -302,7 +295,7 @@ bool NewReminderWindow::checkDenyPermissions()
 	QString line;
 	KUser currentUser;
 
-	if (denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		while (!inputDenyFile.atEnd()) {
 			line = inputDenyFile.readLine();
 
@@ -311,7 +304,7 @@ bool NewReminderWindow::checkDenyPermissions()
 				d->errorCall->handleError(ErrorHandling::inputDenyRead, denyFile.error(), inputDenyFile.status());
 			}
 
-			if (line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
+			if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
 				denyFile.close();
 				return false;
 			}
@@ -333,7 +326,7 @@ bool NewReminderWindow::checkAllowPermissions()
 	QString line;
 	KUser currentUser;
 
-	if (allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		while (!inputAllowFile.atEnd()) {
 			line = inputAllowFile.readLine();
 
@@ -341,7 +334,7 @@ bool NewReminderWindow::checkAllowPermissions()
 				allowFile.close();
 				d->errorCall->handleError(ErrorHandling::inputAllowRead, QFile::NoError, inputAllowFile.status());
 			}
-			else if (line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
+			else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
 				allowFile.close();
 				return true; //Found the user's username
 			}
@@ -408,3 +401,4 @@ void NewReminderWindow::sendToMenu()
 		d->errorCall->handleError(ErrorHandling::windowClose);
 	}
 }
+

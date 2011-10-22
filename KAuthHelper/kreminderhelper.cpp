@@ -28,30 +28,60 @@ ActionReply KReminderHelper::IODeny(QVariantMap args)
 {
 	ActionReply reply;
 	KUser currentUser;
+	QString contents, line;
 	QString originalFilename = args["filename"].toString(), newFilename = "/home/" + currentUser.loginName() + "/.tempKReminderDeny";
 	QFile originalFile(originalFilename), newFile(newFilename);
-	QTextStream originalInputStream(&originalFile), newOutputStream(&newFile);
-	QString contents, line;
+	QTextStream inputStream(&originalFile);
 
-	if((!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) || (!newFile.open(QIODevice::WriteOnly | QIODevice::Text))) {
+	if(!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		reply = ActionReply::HelperErrorReply;
-		reply.setErrorCode(originalFile.error());
+		reply.data()["stringError"] = 0;
+		reply.data()["fileError"] = originalFile.error();
+		reply.data()["streamError"] = 0;
 
 		return reply;
 	}
-	
-	while (!originalInputStream.atEnd()) {
-		line = originalInputStream.readLine();
 
-		if((line.isNull()) || (originalInputStream.status() != QTextStream::Ok) || (originalFile.error() != QFile::NoError)) {
+	if(!newFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		reply = ActionReply::HelperErrorReply;
+		reply.data()["stringError"] = 0;
+		reply.data()["fileError"] = newFile.error();
+		reply.data()["streamError"] = 0;
+
+		return reply;
+	}
+
+	while(!inputStream.atEnd()) {
+		line = inputStream.readLine();
+
+		if((originalFile.error() != QFile::NoError) || (inputStream.status() != QTextStream::Ok) || (line.isNull())) {
 			originalFile.close();
 			newFile.close();
-			//handleError(originalInputStream, originalFile.error(), originalInputStream.status());
+
+			reply = ActionReply::HelperErrorReply;
+			reply.data()["stringError"] = line.isNull();
+			reply.data()["fileError"] = originalFile.error();
+			reply.data()["streamError"] = inputStream.status();
+
+			return reply;
 		}
 
-		if (!line.contains(currentUser.loginName(), Qt::CaseSensitive)) //if the current user is not in this list
-			newFile.write(line.toLocal8Bit().constData());
+		if(!line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is not in this list
+			if(newFile.write(line.toLocal8Bit().constData()) == -1) {
+				originalFile.close();
+				newFile.close();
+
+				reply = ActionReply::HelperErrorReply;
+				reply.data()["stringError"] = 0;
+				reply.data()["fileError"] = newFile.error();
+				reply.data()["streamError"] = 0;
+
+				return reply;
+			}
+		}
 	}
+
+	//TODO: Swap newFile with OriginalFile
 
 	originalFile.close();
 	newFile.close();
@@ -68,14 +98,25 @@ ActionReply KReminderHelper::IOAllow(QVariantMap args)
 
 	if(!file.open(QIODevice::Append | QIODevice::Text)) {
 		reply = ActionReply::HelperErrorReply;
-		reply.setErrorCode(file.error());
+		reply.data()["stringError"] = 0;
+		reply.data()["fileError"] = file.error();
+		reply.data()["streamError"] = 0;
 
 		return reply;
 	}
 
-	file.write(currentUser.loginName().toLocal8Bit().constData());
+	if(file.write(currentUser.loginName().toLocal8Bit().constData()) == -1) {
+		file.close();
+
+		reply = ActionReply::HelperErrorReply;
+		reply.data()["stringError"] = 0;
+		reply.data()["fileError"] = file.error();
+		reply.data()["streamError"] = 0;
+
+		return reply;
+	}
+
 	file.close();
-	
 	return reply;
 }
 

@@ -20,22 +20,26 @@
 #ifndef ERRORHANDLING_H
 #define ERRORHANDLING_H
 
+#include <kauth.h>
+
 #include <QtGui/QWidget>
 
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
 #include <QtCore/QObject>
 
+using namespace KAuth;
+
 class ErrorHandlingPrivate;
 
 class ErrorHandling : public QObject
 {
   Q_OBJECT
-  
+
 public:
     ErrorHandling(QWidget *parent = 0);
     virtual ~ErrorHandling();
-    
+
     enum errorNumber {
 		windowClose = 0,
 		fcrontabFileOpen = 1,
@@ -50,10 +54,13 @@ public:
 		denyFileOpen = 10,
 		allowFileOpen = 11,
 		inputDenyRead = 12,
-		inputAllowRead = 13
+		inputAllowRead = 13,
+		writeAllowFile = 14,
+		writeDenyFile = 15
 	};
- 
+
 	void handleError(errorNumber error, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
+
 private:
     ErrorHandlingPrivate *const d;
 };

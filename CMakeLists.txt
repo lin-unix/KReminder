@@ -11,7 +11,7 @@ target_link_libraries(KReminder ${KDE4_KDEUI_LIBS})
 install(TARGETS KReminder DESTINATION ${BIN_INSTALL_DIR})
 install(FILES KReminderui.rc DESTINATION ${DATA_INSTALL_DIR}/KReminder)
 
-kde4_add_executable(kreminder_helper  KAuthHelper/kreminderhelper.cpp)
+kde4_add_executable(kreminder_helper  KAuthHelper/kauthhelper.cpp)
 target_link_libraries(kreminder_helper ${KDE4_KDECORE_LIBS})
 install(TARGETS kreminder_helper DESTINATION ${LIBEXEC_INSTALL_DIR})
 kde4_install_auth_helper_files(KReminder org.kde.auth.kreminder root)

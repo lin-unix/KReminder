@@ -209,25 +209,22 @@ void NewReminderWindow::saveReminder()
 	KProcess *systemCall = new KProcess(this);
 
 	switch (systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
-
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
 		}
-
 		case -2: {
 			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
 		}
-
 		case 1: {
 			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
 	}
 
 	if(!checkDenyPermissions())
-		d->errorCall->handleError(ErrorHandling::adminDenyFile); //error message - need admin rights to change permissions
+		d->errorCall->handleError(ErrorHandling::adminDenyFile);
 
 	if(!checkAllowPermissions())
-		d->errorCall->handleError(ErrorHandling::adminAllowFile); //error message - need admin rights to change permissions
+		d->errorCall->handleError(ErrorHandling::adminAllowFile);
 
 	//Tell fcrontab to pipe the user's current fcrontab file in to a temporary file
 	switch (system(cmdInput->toLocal8Bit().constData())) {

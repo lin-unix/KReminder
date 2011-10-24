@@ -16,38 +16,44 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "kreminderhelper.h"
+#include "kauthhelper.h"
 
 #include <KDE/KUser>
+#include <KDE/KProcess>
 
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
+#include <QtCore/QStringList>
+#include <QtCore/QVariantMap>
+#include <QtCore/QString>
 
 //Change the contents of fcron.deny
-ActionReply KReminderHelper::IODeny(QVariantMap args)
+ActionReply KAuthHelper::IODeny(QVariantMap args)
 {
-	ActionReply reply;
+	ActionReply reply = ActionReply::HelperErrorReply;
+	QVariantMap returnData;
 	KUser currentUser;
+	KProcess *systemCall = new KProcess(this);
 	QString contents, line;
 	QString originalFilename = args["filename"].toString(), newFilename = "/home/" + currentUser.loginName() + "/.tempKReminderDeny";
 	QFile originalFile(originalFilename), newFile(newFilename);
 	QTextStream inputStream(&originalFile);
 
 	if(!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		reply = ActionReply::HelperErrorReply;
-		reply.data()["stringError"] = 0;
-		reply.data()["fileError"] = originalFile.error();
-		reply.data()["streamError"] = 0;
+		returnData["stringError"] = 0;
+		returnData["fileError"] = originalFile.error();
+		returnData["streamError"] = 0;
 
+		reply.setData(returnData);
 		return reply;
 	}
 
 	if(!newFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		reply = ActionReply::HelperErrorReply;
-		reply.data()["stringError"] = 0;
-		reply.data()["fileError"] = newFile.error();
-		reply.data()["streamError"] = 0;
+		returnData["stringError"] = 0;
+		returnData["fileError"] = newFile.error();
+		returnData["streamError"] = 0;
 
+		reply.setData(returnData);
 		return reply;
 	}
 
@@ -58,11 +64,11 @@ ActionReply KReminderHelper::IODeny(QVariantMap args)
 			originalFile.close();
 			newFile.close();
 
-			reply = ActionReply::HelperErrorReply;
-			reply.data()["stringError"] = line.isNull();
-			reply.data()["fileError"] = originalFile.error();
-			reply.data()["streamError"] = inputStream.status();
+			returnData["stringError"] = line.isNull();
+			returnData["fileError"] = originalFile.error();
+			returnData["streamError"] = inputStream.status();
 
+			reply.setData(returnData);
 			return reply;
 		}
 
@@ -71,26 +77,41 @@ ActionReply KReminderHelper::IODeny(QVariantMap args)
 				originalFile.close();
 				newFile.close();
 
-				reply = ActionReply::HelperErrorReply;
-				reply.data()["stringError"] = 0;
-				reply.data()["fileError"] = newFile.error();
-				reply.data()["streamError"] = 0;
+				returnData["stringError"] = 0;
+				returnData["fileError"] = newFile.error();
+				returnData["streamError"] = 0;
 
+				reply.setData(returnData);
 				return reply;
 			}
 		}
 	}
 
-	//TODO: Swap newFile with OriginalFile
+	if(!systemCall->execute(QString("mv " + newFilename + " /usr/local/etc/fcron.deny"), QStringList(), -1)) {
+		originalFile.close();
+		newFile.close();
+
+		returnData["stringError"] = 0;
+		returnData["fileError"] = 0;
+		returnData["streamError"] = 0;
+
+		reply.setData(returnData);
+		return reply;
+	}
 
 	originalFile.close();
 	newFile.close();
 
+	returnData["stringError"] = 0;
+	returnData["fileError"] = 0;
+	returnData["streamError"] = 0;
+
+	reply.setData(returnData);
 	return reply;
 }
 
 //Change the contents of fcron.allow
-ActionReply KReminderHelper::IOAllow(QVariantMap args)
+ActionReply KAuthHelper::IOAllow(QVariantMap args)
 {
 	ActionReply reply;
 	KUser currentUser;
@@ -120,4 +141,9 @@ ActionReply KReminderHelper::IOAllow(QVariantMap args)
 	return reply;
 }
 
-KDE4_AUTH_HELPER_MAIN("org.kde.auth.kreminder", KReminderHelper)
+void KAuthHelper::setError()
+{
+	;
+}
+
+KDE4_AUTH_HELPER_MAIN("org.kde.auth.kreminder", KAuthHelper)

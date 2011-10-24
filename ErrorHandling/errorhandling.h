@@ -41,25 +41,26 @@ public:
     virtual ~ErrorHandling();
 
     enum errorNumber {
-		windowClose = 0,
-		fcrontabFileOpen = 1,
-		writeReminderToFile = 2,
-		fileDelete = 3,
-		processCrashed = 4,
-		processNotStarted = 5,
-		fcronError = 6,
-		systemFunction = 7,
-		adminDenyFile = 8,
-		adminAllowFile = 9,
-		denyFileOpen = 10,
-		allowFileOpen = 11,
-		inputDenyRead = 12,
-		inputAllowRead = 13,
-		writeAllowFile = 14,
-		writeDenyFile = 15
+		noError = 0,
+		windowClose = 1,
+		fcrontabFileOpen = 2,
+		writeReminderToFile = 3,
+		fileDelete = 4,
+		processCrashed = 5,
+		processNotStarted = 6,
+		fcronError = 7,
+		systemFunction = 8,
+		adminDenyFile = 9,
+		adminAllowFile = 10,
+		denyFileOpen = 11,
+		allowFileOpen = 12,
+		inputDenyRead = 13,
+		inputAllowRead = 14,
+		writeAllowFile = 15,
+		writeDenyFile = 16
 	};
 
-	void handleError(errorNumber error, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
+	void handleError(errorNumber error = noError, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
 
 private:
     ErrorHandlingPrivate *const d;

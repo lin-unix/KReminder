@@ -21,8 +21,9 @@
 
 #include <KDE/KDialog>
 #include <KDE/KLocale>
+#include <KDE/KApplication>
 
-#include <QLabel>
+#include <QtGui/QLabel>
 
 class ErrorHandlingPrivate
 {
@@ -84,18 +85,23 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, QFile::FileErr
         }
         case adminAllowFile: {
 			QVariantMap args;
-			KAuth::Action writeAllow("org.kde.auth.kreminder.rwallow");
+			Action writeAllow("org.kde.auth.kreminder.rwallow");
 
 			writeAllow.setHelperID("org.kde.auth.kreminder");
 			args["filename"] = "/usr/local/etc/fcron.allow";
 			writeAllow.setArguments(args);
 
-			KAuth::ActionReply reply = writeAllow.execute();
+			ActionReply reply = writeAllow.execute();
 
 			if(reply.failed()) {
 				if(reply.type() == ActionReply::KAuthError) {
-					; //Could not complete task
+					; //Internal KAuth error
 				}
+				else if(reply.type() == ActionReply::HelperError) {
+					; //Self generated error code provided
+				}
+
+				d->parent->close(); //Terminate program
 			}
 
             break;

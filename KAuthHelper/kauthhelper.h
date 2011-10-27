@@ -23,13 +23,15 @@
 #include <kauth.h>
 
 #include <QtCore/QObject>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
 
 using namespace KAuth;
 
 class KAuthHelper : public QObject
 {
 private:
-	void setError();
+	ActionReply setReturnValue(QFile *originalFile = NULL, QFile *newFile = NULL, bool isStringNull = false, QTextStream::Status streamStatus = QTextStream::Ok);
 
 private slots:
 	ActionReply IODeny(QVariantMap args);

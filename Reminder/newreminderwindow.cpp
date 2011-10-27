@@ -274,7 +274,7 @@ void NewReminderWindow::saveReminder()
 			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
 		default: {
-			if (!fcrontabFile.remove()) {
+			if(!fcrontabFile.remove()) {
 				d->errorCall->handleError(ErrorHandling::fileDelete, fcrontabFile.error()); //delete error
 			}
 
@@ -364,11 +364,9 @@ const char *NewReminderWindow::formatReminder(QString reminder)
 	reminder.append(" ");
 
 	reminder.append(QString::number(d->calendarWidget->selectedDate().month())); //Month
-	reminder.append(" ");
+	reminder.append(" * ");//Day of week
 
-	reminder.append("* "); //Day of week
 	reminder.append("rekonq\n"); //Command to run
-
 	return reminder.toLocal8Bit().constData();
 }
 

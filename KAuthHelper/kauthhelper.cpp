@@ -21,8 +21,6 @@
 #include <KDE/KUser>
 #include <KDE/KProcess>
 
-#include <QtCore/QFile>
-#include <QtCore/QTextStream>
 #include <QtCore/QStringList>
 #include <QtCore/QVariantMap>
 #include <QtCore/QString>
@@ -30,8 +28,6 @@
 //Change the contents of fcron.deny
 ActionReply KAuthHelper::IODeny(QVariantMap args)
 {
-	ActionReply reply = ActionReply::HelperErrorReply;
-	QVariantMap returnData;
 	KUser currentUser;
 	KProcess *systemCall = new KProcess(this);
 	QString contents, line;
@@ -40,110 +36,62 @@ ActionReply KAuthHelper::IODeny(QVariantMap args)
 	QTextStream inputStream(&originalFile);
 
 	if(!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		returnData["stringError"] = 0;
-		returnData["fileError"] = originalFile.error();
-		returnData["streamError"] = 0;
-
-		reply.setData(returnData);
-		return reply;
+		return setReturnValue(&originalFile);
 	}
 
 	if(!newFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		returnData["stringError"] = 0;
-		returnData["fileError"] = newFile.error();
-		returnData["streamError"] = 0;
-
-		reply.setData(returnData);
-		return reply;
+		return setReturnValue(NULL, &newFile);
 	}
 
 	while(!inputStream.atEnd()) {
 		line = inputStream.readLine();
 
 		if((originalFile.error() != QFile::NoError) || (inputStream.status() != QTextStream::Ok) || (line.isNull())) {
-			originalFile.close();
-			newFile.close();
-
-			returnData["stringError"] = line.isNull();
-			returnData["fileError"] = originalFile.error();
-			returnData["streamError"] = inputStream.status();
-
-			reply.setData(returnData);
-			return reply;
+			return setReturnValue(&originalFile, &newFile, line.isNull(), inputStream.status());
 		}
 
 		if(!line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is not in this list
 			if(newFile.write(line.toLocal8Bit().constData()) == -1) {
-				originalFile.close();
-				newFile.close();
-
-				returnData["stringError"] = 0;
-				returnData["fileError"] = newFile.error();
-				returnData["streamError"] = 0;
-
-				reply.setData(returnData);
-				return reply;
+				return setReturnValue(&originalFile, &newFile, line.isNull(), inputStream.status());
 			}
 		}
 	}
 
 	if(!systemCall->execute(QString("mv " + newFilename + " /usr/local/etc/fcron.deny"), QStringList(), -1)) {
-		originalFile.close();
-		newFile.close();
-
-		returnData["stringError"] = 0;
-		returnData["fileError"] = 0;
-		returnData["streamError"] = 0;
-
-		reply.setData(returnData);
-		return reply;
+		return setReturnValue(&originalFile, &newFile);
 	}
 
-	originalFile.close();
-	newFile.close();
-
-	returnData["stringError"] = 0;
-	returnData["fileError"] = 0;
-	returnData["streamError"] = 0;
-
-	reply.setData(returnData);
-	return reply;
+	return setReturnValue();
 }
 
 //Change the contents of fcron.allow
 ActionReply KAuthHelper::IOAllow(QVariantMap args)
 {
-	ActionReply reply;
 	KUser currentUser;
 	QFile file(args["filename"].toString());
 
 	if(!file.open(QIODevice::Append | QIODevice::Text)) {
-		reply = ActionReply::HelperErrorReply;
-		reply.data()["stringError"] = 0;
-		reply.data()["fileError"] = file.error();
-		reply.data()["streamError"] = 0;
-
-		return reply;
+		return setReturnValue(&file);
 	}
 
-	if(file.write(currentUser.loginName().toLocal8Bit().constData()) == -1) {
-		file.close();
-
-		reply = ActionReply::HelperErrorReply;
-		reply.data()["stringError"] = 0;
-		reply.data()["fileError"] = file.error();
-		reply.data()["streamError"] = 0;
-
-		return reply;
-	}
-
-	file.close();
-	return reply;
+	file.write(currentUser.loginName().toLocal8Bit().constData()); //Any errors will be found below
+	return setReturnValue(&file);
 }
 
-void KAuthHelper::setError()
+ActionReply KAuthHelper::setReturnValue(QFile *originalFile, QFile *newFile, bool isStringNull, QTextStream::Status streamStatus)
 {
-	;
+	ActionReply reply = ActionReply::HelperErrorReply;
+	QVariantMap returnData;
+
+	returnData["originalFileError"] = originalFile->error();
+	returnData["newFileError"] = newFile->error();
+	returnData["stringError"] = isStringNull;
+	returnData["streamError"] = streamStatus;
+	returnData["fileRemovalError"] = newFile->remove();
+
+	originalFile->close();
+	reply.setData(returnData);
+	return reply;
 }
 
 KDE4_AUTH_HELPER_MAIN("org.kde.auth.kreminder", KAuthHelper)

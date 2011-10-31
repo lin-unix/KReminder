@@ -1,6 +1,6 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2011  <copyright holder> <email>
+    KReminder - A Replacement Of Your Short-Term Memory
+    Copyright (C) 2011  Steven Sroka
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ class ErrorHandlingPrivate
 {
 public:
 	QWidget *parent;
+	bool close;
 };
 
 ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
@@ -36,26 +37,32 @@ ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 }
 
 //TODO: Save all errors to log file
-//TODO: Let Dr.Konqi report errors and give it the log file
-void ErrorHandling::handleError(ErrorHandling::errorNumber error, QFile::FileError fileError, QTextStream::Status textStreamError)
+//TODO: Let Dr. Konqi report errors and give it the log file
+bool ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError)
 {
     KDialog *errorDialog = new KDialog(0);
 
     errorDialog->setButtons(KDialog::User1 | KDialog::User2);
     errorDialog->setDefaultButton(KDialog::User1);
-    errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString("Quit"), KIcon("application-exit", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
-    errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString("Report Error"), KIcon("tools-report-bug", KIconLoader::global()), QString("Tooltip"), QString("What's this")));
+	errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString(i18n("Quit")), KIcon("application-exit", KIconLoader::global()), QString(i18n("Do not report error")), QString(i18n("Quit KReminder"))));
+	errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString(i18n("Report Error")), KIcon("tools-report-bug", KIconLoader::global()), QString(i18n("Launch wizard to report error")), QString(i18n("Open Dr. Konqi to report an error"))));
 
     errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
     errorDialog->setCaption(i18n("Internal Error"));
-    errorDialog->setModal(true);
 
-    connect(errorDialog, SIGNAL(user2Clicked()), this, SLOT(close()));
+    if(!connect(errorDialog, SIGNAL(user2Clicked()), errorDialog, SLOT(reject()))) {
+		// Log problem with connecting signal with slot
+		return true;
+	}
 
-    switch (error) {
+    switch(error) {
         case windowClose: {
-			errorDialog->show();
-            d->parent->window()->hide();
+			if(errorDialog->exec()) // When using exec(), window is modal
+				return true; // If exec() returns 0 (which is a rejection to run Dr. Konqi because the user clicked "Quit"), then end the program
+			else {
+				return false;
+				//Add code here to run Dr. Konqi
+			}
 
             break;
         }
@@ -101,9 +108,10 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, QFile::FileErr
 					; //Self generated error code provided
 				}
 
-				d->parent->close(); //Terminate program
+				return true; //Terminate program
 			}
 
+			return false;
             break;
         }
         case denyFileOpen: {
@@ -119,9 +127,11 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, QFile::FileErr
             break;
         }
         default: {
-            ; //why would this be run? Save to log if this happens
+            return true; //why would this be run? Save to log if this happens
         }
     }
+
+    return true;
 }
 
 ErrorHandling::~ErrorHandling() {

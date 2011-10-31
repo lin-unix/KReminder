@@ -41,4 +41,4 @@ private slots:
     void next();
 };
 
-#endif
+#endif //INTROWINDOW_H

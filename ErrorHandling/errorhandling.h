@@ -1,6 +1,6 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
-    Copyright (C) 2011  <copyright holder> <email>
+    KReminder - A Replacement Of Your Short-Term Memory
+    Copyright (C) 2011  Steven Sroka
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,27 +43,29 @@ public:
     enum errorNumber {
 		noError = 0,
 		windowClose = 1,
-		fcrontabFileOpen = 2,
-		writeReminderToFile = 3,
-		fileDelete = 4,
-		processCrashed = 5,
-		processNotStarted = 6,
-		fcronError = 7,
-		systemFunction = 8,
-		adminDenyFile = 9,
-		adminAllowFile = 10,
-		denyFileOpen = 11,
-		allowFileOpen = 12,
-		inputDenyRead = 13,
-		inputAllowRead = 14,
-		writeAllowFile = 15,
-		writeDenyFile = 16
+		windowCloseQuit = 2,
+		selectedOption = 3,
+		fcrontabFileOpen = 4,
+		writeReminderToFile = 5,
+		fileDelete = 6,
+		processCrashed = 7,
+		processNotStarted = 8,
+		fcronError = 9,
+		systemFunction = 10,
+		adminDenyFile = 11,
+		adminAllowFile = 12,
+		denyFileOpen = 13,
+		allowFileOpen = 14,
+		inputDenyRead = 15,
+		inputAllowRead = 16,
+		writeAllowFile = 17,
+		writeDenyFile = 18,
 	};
 
-	void handleError(errorNumber error = noError, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
+	bool handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
 
 private:
     ErrorHandlingPrivate *const d;
 };
 
-#endif // ERRORHANDLING_H
+#endif //ERRORHANDLING_H

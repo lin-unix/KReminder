@@ -33,9 +33,7 @@
 #include <KDE/KUser>
 #include <KDE/KProcess>
 #include <KDE/KStandardGuiItem>
-#include <KDE/KGuiItem>
 #include <KDE/KMessageBox>
-#include <KDE/KIconLoader>
 
 #include <QtGui/QApplication>
 #include <QtGui/QWidget>
@@ -51,6 +49,7 @@
 #include <QtCore/QString>
 #include <QtCore/QTime>
 #include <QtCore/QDate>
+#include <QtCore/QFileInfo>
 
 class NewReminderWindowPrivate
 {
@@ -119,7 +118,7 @@ void NewReminderWindow::setupObjects()
 	d->customRadio->setChecked(true);
 
 	buttonBoxWidget->addButton(KStandardGuiItem::ok(), KDialogButtonBox::AcceptRole, this, SLOT(saveReminder()));
-	buttonBoxWidget->addButton("Main Menu", KDialogButtonBox::AcceptRole, this, SLOT(sendToMenu()));
+	buttonBoxWidget->addButton(i18n("Main Menu"), KDialogButtonBox::AcceptRole, this, SLOT(sendToMenu()));
 	buttonBoxWidget->addButton(KStandardGuiItem::close(), KDialogButtonBox::AcceptRole, this, SLOT(close()));
 
 	connect(d->dayRadio, SIGNAL(toggled(bool)), this, SLOT(changeDateTime(bool)));
@@ -181,16 +180,19 @@ void NewReminderWindow::changeDateTime(bool checked)
 {
 	QDate newDate = QDate::currentDate();
 
-	if (checked) { //24 hours
-		if ((d->dayRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->weekRadio->isChecked())) {
+	if(checked) { //24 hours
+		if((d->dayRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->weekRadio->isChecked())) {
 			d->dayChecked = true;
 			d->calendarWidget->setSelectedDate(newDate.addDays(1));
-		} else { //1 week
-			if ((d->weekRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->dayRadio->isChecked())) {
-				if (d->dayChecked)
+		}
+		else { //1 week
+			if((d->weekRadio->isChecked()) && (!d->customRadio->isChecked()) && (!d->dayRadio->isChecked())) {
+				if(d->dayChecked) {
 					d->calendarWidget->setSelectedDate(newDate.addDays(6));
-				else
+				}
+				else {
 					d->calendarWidget->setSelectedDate(newDate.addDays(7));
+				}
 
 				d->dayChecked = false;
 			}
@@ -208,62 +210,68 @@ void NewReminderWindow::saveReminder()
 	QString *cmdInput = new QString("fcrontab -l >> /home/" + currentUser.loginName() + "/.KReminter_fcrontab");
 	KProcess *systemCall = new KProcess(this);
 
-	switch (systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
+	switch(systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
 		case -1: {
-			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
+			d->errorCall->handleError(ErrorHandling::processCrashed, true); //Process crashed
+			break;
 		}
 		case -2: {
-			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
+			d->errorCall->handleError(ErrorHandling::processNotStarted, true); //Process could not be started
+			break;
 		}
 		case 1: {
-			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError, true); //Fcron error code
+			break;
 		}
 	}
 
-	if(!checkDenyPermissions())
-		d->errorCall->handleError(ErrorHandling::adminDenyFile);
+	if(!checkUserPermissions()) {
+		if(d->errorCall->handleError(ErrorHandling::adminDenyFile)) {
+			if(!window()->close()) {
+				d->errorCall->handleError(ErrorHandling::windowClose);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
 
-	if(!checkAllowPermissions())
-		d->errorCall->handleError(ErrorHandling::adminAllowFile);
-
-	//Tell fcrontab to pipe the user's current fcrontab file in to a temporary file
-	switch (system(cmdInput->toLocal8Bit().constData())) {
+	//Tell fcrontab to pipe the user's current fcrontab file into a temporary file
+	switch(system(cmdInput->toLocal8Bit().constData())) {
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::systemFunction); //general error
 		}
 		case 1: {
 			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
 		}
-		default: { //Open the new temporary copy of the user's fcrontab file
-			if (fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
-				if (((fcrontabFile.readAll()).trimmed()).isEmpty()) {
-					if (!writeReminder(&fcrontabFile)) {
-						fcrontabFile.close(); //write error
-						d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
-					}
+	}
 
+	//Open the new temporary copy of the user's fcrontab file
+	if(fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
+		if(((fcrontabFile.readAll()).trimmed()).isEmpty()) {
+			if(!writeReminder(&fcrontabFile)) {
+				fcrontabFile.close(); //write error
+				d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
+			}
+
+			fcrontabFile.close();
+		} else {
+			fcrontabFile.close(); //close it so that it can be opened for appending
+
+			if(fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
+				if(!writeReminder(&fcrontabFile)) { //write error
 					fcrontabFile.close();
-				} else {
-					fcrontabFile.close(); //close it so that it can be opened for appending
-
-					if (fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
-						if (!writeReminder(&fcrontabFile)) {
-							fcrontabFile.close(); //write error
-							d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
-						}
-
-						fcrontabFile.close();
-					} else {
-						d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
-					}
+					d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
 				}
+
+				fcrontabFile.close();
 			} else {
 				d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
 			}
 		}
+	} else {
+		d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
 	}
 
-	switch (systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
+	switch(systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
 		}
@@ -279,57 +287,77 @@ void NewReminderWindow::saveReminder()
 			}
 
 			if(!window()->close()) {
+				window()->hide();
 				d->errorCall->handleError(ErrorHandling::windowClose);
 			}
 		}
 	}
 }
 
-bool NewReminderWindow::checkDenyPermissions()
+/*
+ * Check if both fcron.deny and fcron.allow exist.
+ * (fcron.deny does not exist but fcron.allow exists then only those in fcron.allow are allowed to use fcron)
+ * (fcron.deny exists but fcron.allow does not exist then only those not in fcron.deny are allowed to use fcron)
+ * (Neither fcron.deny and fcron.allow exists means that everyone is allowed to use fcron)
+ *
+ * Check if the user has read and write access to the existing files.
+ * If not, get read and write permissions for both files.
+ * If so, check if the user is listed in either file.
+ *
+ * If the user is in the deny list, remove them.
+ * If the user is in the allow list, do nothing.
+ * If the user is not in the allow list add them to it.
+ *
+ * Note: After this function has checked whether or not fcron.deny and fcron.allow exists,
+ * this function assumes that the file(s) will continue to exist throughout the execution of this function
+ * because there is no guarantee that the file(s) have not been deleted (even with file locks). Good ol' OS!
+ *
+ *
+ * TODO: Check return values. There will be incorrect!
+ * False == this function has failed
+ */
+bool NewReminderWindow::checkUserPermissions()
 {
-	QFile denyFile("/usr/local/etc/fcron.deny");
-	QTextStream inputDenyFile(&denyFile);
+	QFile denyFile("/usr/local/etc/fcron.deny"), allowFile("/usr/local/etc/fcron.allow");
+	QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
+	QFile::FileError denyError, allowError;
 	QString line;
 	KUser currentUser;
 
+	if(!checkFilePermissions(&denyFile, &allowFile)) {
+		; //Ask for root access here, so KReminder can read/write to and from the file(s)
+	}
+
 	if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		while (!inputDenyFile.atEnd()) {
+		while(!inputDenyFile.atEnd()) {
 			line = inputDenyFile.readLine();
 
 			if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
+				denyError = denyFile.error();
 				denyFile.close();
-				d->errorCall->handleError(ErrorHandling::inputDenyRead, denyFile.error(), inputDenyFile.status());
+				d->errorCall->handleError(ErrorHandling::inputDenyRead, true, denyError, inputDenyFile.status());
 			}
 
 			if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
 				denyFile.close();
-				return false;
+				return false; //break; Ask for root permissions, if KReminder doesn't already have them
 			}
 		}
 
 		denyFile.close();
 	}
 	else {
-		d->errorCall->handleError(ErrorHandling::denyFileOpen, denyFile.error(), QTextStream::Ok);
+		d->errorCall->handleError(ErrorHandling::denyFileOpen, true, denyFile.error(), QTextStream::Ok);
 	}
 
-	return false;
-}
-
-bool NewReminderWindow::checkAllowPermissions()
-{
-	QFile allowFile("/usr/local/etc/fcron.allow");
-	QTextStream inputAllowFile(&allowFile);
-	QString line;
-	KUser currentUser;
-
 	if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		while (!inputAllowFile.atEnd()) {
+		while(!inputAllowFile.atEnd()) {
 			line = inputAllowFile.readLine();
 
 			if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
+				allowError = allowFile.error();
 				allowFile.close();
-				d->errorCall->handleError(ErrorHandling::inputAllowRead, QFile::NoError, inputAllowFile.status());
+				d->errorCall->handleError(ErrorHandling::inputAllowRead, true, allowError, inputAllowFile.status());
 			}
 			else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
 				allowFile.close();
@@ -339,11 +367,40 @@ bool NewReminderWindow::checkAllowPermissions()
 
 		allowFile.close();
 		return false;  //The allow file did not have the user's username listed
+		//Ask for root permissions, if KReminder doesn't already have them
 	}
 	else {
-		d->errorCall->handleError(ErrorHandling::allowFileOpen);
+		d->errorCall->handleError(ErrorHandling::allowFileOpen, true, allowFile.error(), QTextStream::Ok);
 	}
 
+	return false;
+}
+
+/*
+ * TODO: Check if the user's group has read/write access
+ */
+bool checkFilePermissions(QFile *denyFile, QFile *allowFile)
+{
+	QFileInfo denyFileInfo(*denyFile), allowFileInfo(*allowFile);
+	KUser currentUser;
+
+	if(denyFile->exists()) {
+		//Note: On Unix, Qt returns whether the owner has read/write access (not the user!)
+		if(((denyFileInfo.ownerId() == currentUser.uid()) && (denyFileInfo.isReadable()) && (denyFileInfo.isWritable())) &&
+			((denyFileInfo.groupId() == currentUser.gid()) && (denyFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup)))) {
+			return true;
+		}
+	}
+
+	if(allowFile->exists()) {
+		//Note: On Unix, Qt returns whether the owner has read/write access (not the user!)
+		if(((allowFileInfo.ownerId() == currentUser.uid()) && (allowFileInfo.isReadable()) && (allowFileInfo.isWritable())) &&
+			((allowFileInfo.groupId() == currentUser.gid()) && (allowFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup)))) {
+			return true;
+		}
+	}
+
+	//User does not have access to the file(s)
 	return false;
 }
 
@@ -393,6 +450,7 @@ void NewReminderWindow::sendToMenu()
 	mainMenu->show();
 
 	if(!window()->close()) {
+		window()->hide();
 		d->errorCall->handleError(ErrorHandling::windowClose);
 	}
 }

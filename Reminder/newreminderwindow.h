@@ -37,10 +37,10 @@ private:
     NewReminderWindowPrivate *const d;
 
     void setupObjects();
-	const char *formatReminder(QString reminder);
-	bool writeReminder(QFile *fcrontabFile);
-	bool checkDenyPermissions();
-	bool checkAllowPermissions();
+	const char *formatReminder(QString reminder = NULL);
+	bool writeReminder(QFile *fcrontabFile = NULL);
+	bool checkUserPermissions();
+	bool checkFilePermissions(QFile *denyFile = NULL, QFile *allowFile = NULL);
 
 private slots:
     void changeDateTime(bool checked);
@@ -48,4 +48,4 @@ private slots:
     void sendToMenu();
 };
 
-#endif // NEWREMINDERWINDOW_H
+#endif //NEWREMINDERWINDOW_H

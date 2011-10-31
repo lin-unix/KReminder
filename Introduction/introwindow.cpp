@@ -1,6 +1,6 @@
 /*
- *  <one line to give the program's name and a brief idea of what it does.>
- *  Copyright (C) <year>  <name of author>
+ *  KReminder - A Replacement Of Your Short-Term Memory
+ *  Copyright (C) 2011  Steven Sroka
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 #include "introwindow.h"
 #include "Reminder/newreminderwindow.h"
+#include "ErrorHandling/errorhandling.h"
 
 #include <KDE/KLocale>
 #include <KDE/KSeparator>
@@ -38,7 +39,7 @@ class IntroWindowPrivate
 public:
     KPushButton *nextButton;
     KPushButton *closeButton;
-    
+
     int optionSelected;
 };
 
@@ -76,9 +77,9 @@ void IntroWindow::setupObjects()
 
     d->nextButton = buttonBoxWidget->addButton(KStandardGuiItem::forward(), KDialogButtonBox::AcceptRole, this, SLOT(next()));
     d->closeButton = buttonBoxWidget->addButton(KStandardGuiItem::close(), KDialogButtonBox::AcceptRole, parentWidget(), SLOT(close()));
-    
+
     setAddReminderToolTip(true);
-    
+
     vWindowLayout->insertSpacing(0, 5);
     vButtonGroupLayout->addWidget(addReminderRadio);
     vButtonGroupLayout->addWidget(addNoteRadio);
@@ -105,7 +106,7 @@ void IntroWindow::setupObjects()
 
     connect(addReminderRadio, SIGNAL(clicked(bool)), this, SLOT(setAddReminderToolTip(bool)));
     connect(addNoteRadio, SIGNAL(clicked(bool)), this, SLOT(setAddNoteToolTip(bool)));
-    
+
     connect(d->closeButton, SIGNAL(clicked(bool)), this, SLOT(close()));
 
     mainWidget->setLayout(vWindowLayout);
@@ -119,35 +120,42 @@ IntroWindow::~IntroWindow()
 
 void IntroWindow::setAddReminderToolTip(bool checked)
 {
-    if (checked) {
+    if(checked) {
         d->nextButton->setToolTip(i18n("Create a new reminder"));
         d->nextButton->setWhatsThis(i18n("Choose this if you want to setup a new reminder"));
-	
-	d->optionSelected = 0;
+
+		d->optionSelected = 0;
     }
 }
 
 void IntroWindow::setAddNoteToolTip(bool checked)
 {
-    if (checked) {
+    if(checked) {
         d->nextButton->setToolTip(i18n("Pencil in a new note"));
         d->nextButton->setWhatsThis(i18n("Choose this if you want to create a new note"));
-	
-	d->optionSelected = 1;
+
+		d->optionSelected = 1;
     }
 }
 
 void IntroWindow::next()
 {
-    if (d->optionSelected == 0) {
+	ErrorHandling *callErrorHandler = new ErrorHandling();
+
+    if(d->optionSelected == 0) {
         NewReminderWindow *optionWindow = new NewReminderWindow(0);
         optionWindow->show();
-    } else if (d->optionSelected == 1) {
+    }
+    else if(d->optionSelected == 1) {
         //NewNote *optionWindow = new NewNote(parentWidget());
         //optionWindow->show();
-    } else {
-        ; //Error
+    }
+    else {
+		callErrorHandler->handleError(ErrorHandling::selectedOption);
     }
 
-    window()->close();
+    if(!window()->close()) {
+		window()->hide();
+		callErrorHandler->handleError(ErrorHandling::windowCloseQuit);
+	}
 }

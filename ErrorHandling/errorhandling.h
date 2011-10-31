@@ -62,7 +62,7 @@ public:
 		writeDenyFile = 18,
 	};
 
-	bool handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok);
+	bool handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);
 
 private:
     ErrorHandlingPrivate *const d;

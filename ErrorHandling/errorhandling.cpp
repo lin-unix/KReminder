@@ -38,7 +38,7 @@ ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 
 //TODO: Save all errors to log file
 //TODO: Let Dr. Konqi report errors and give it the log file
-bool ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError)
+bool ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
 {
     KDialog *errorDialog = new KDialog(0);
 

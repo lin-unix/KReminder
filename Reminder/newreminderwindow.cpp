@@ -322,64 +322,82 @@ bool NewReminderWindow::checkUserPermissions()
 	QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
 	QFile::FileError denyError, allowError;
 	QString line;
+	bool userFoundInDeny = false, userFoundinAllow = false;
 	KUser currentUser;
 
 	if(!checkFilePermissions(&denyFile, &allowFile)) {
-		; //Ask for root access here, so KReminder can read/write to and from the file(s)
+		; //Ask for root access here, so KReminder can read/write from and to the file(s)
 	}
 
-	if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		while(!inputDenyFile.atEnd()) {
-			line = inputDenyFile.readLine();
+	if(denyFile.exists()) {
+		if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			while(!inputDenyFile.atEnd()) {
+				line = inputDenyFile.readLine();
 
-			if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
-				denyError = denyFile.error();
-				denyFile.close();
-				d->errorCall->handleError(ErrorHandling::inputDenyRead, true, denyError, inputDenyFile.status());
+				if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
+					denyError = denyFile.error();
+					denyFile.close();
+					d->errorCall->handleError(ErrorHandling::inputDenyRead, true, denyError, inputDenyFile.status(), line.isNull());
+				}
+
+				if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
+					denyFile.close();
+					userFoundInDeny = true;
+					break;
+				}
 			}
 
-			if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
-				denyFile.close();
-				return false; //break; Ask for root permissions, if KReminder doesn't already have them
+			denyFile.close();
+		}
+		else {
+			d->errorCall->handleError(ErrorHandling::denyFileOpen, true, denyFile.error(), QTextStream::Ok);
+		}
+	}
+
+	if(!userFoundInDeny) {
+		if(allowFile.exists()) {
+			if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+				while(!inputAllowFile.atEnd()) {
+					line = inputAllowFile.readLine();
+
+					if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
+						allowError = allowFile.error();
+						allowFile.close();
+						d->errorCall->handleError(ErrorHandling::inputAllowRead, true, allowError, inputAllowFile.status(), line.isNull());
+					}
+					else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
+						allowFile.close();
+						userFoundinAllow = true;
+						break; //Found the user's username
+					}
+				}
+
+				allowFile.close();
+			}
+			else {
+				d->errorCall->handleError(ErrorHandling::allowFileOpen, true, allowFile.error(), QTextStream::Ok);
 			}
 		}
+	}
 
-		denyFile.close();
+	if((userFoundInDeny) || (!userFoundinAllow)) {
+		//if(editFiles(&denyFile, &allowFile, userFoundInDeny, userFoundinAllow)) {
+		return true;
+		//}
+		//else {
+			; //Error in editing files
+		//}
 	}
 	else {
-		d->errorCall->handleError(ErrorHandling::denyFileOpen, true, denyFile.error(), QTextStream::Ok);
+		return true;
 	}
-
-	if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		while(!inputAllowFile.atEnd()) {
-			line = inputAllowFile.readLine();
-
-			if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
-				allowError = allowFile.error();
-				allowFile.close();
-				d->errorCall->handleError(ErrorHandling::inputAllowRead, true, allowError, inputAllowFile.status());
-			}
-			else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
-				allowFile.close();
-				return true; //Found the user's username
-			}
-		}
-
-		allowFile.close();
-		return false;  //The allow file did not have the user's username listed
-		//Ask for root permissions, if KReminder doesn't already have them
-	}
-	else {
-		d->errorCall->handleError(ErrorHandling::allowFileOpen, true, allowFile.error(), QTextStream::Ok);
-	}
-
-	return false;
 }
 
 /*
- * TODO: Check if the user's group has read/write access
+ * Any errors from QFileInfo::ownerID(), groupId() or KUser::uid(), gid() are ignored,
+ * and it is assumed that the user does not have read/write access to the needed file(s)
  */
-bool checkFilePermissions(QFile *denyFile, QFile *allowFile)
+bool NewReminderWindow::checkFilePermissions(QFile* denyFile, QFile* allowFile)
 {
 	QFileInfo denyFileInfo(*denyFile), allowFileInfo(*allowFile);
 	KUser currentUser;

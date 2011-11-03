@@ -207,49 +207,43 @@ void NewReminderWindow::saveReminder()
 {
 	KUser currentUser;
 	QFile fcrontabFile("/home/" + currentUser.loginName() + "/.KReminter_fcrontab");
+	QFile::FileError fileError = QFile::NoError;
 	QString *cmdInput = new QString("fcrontab -l >> /home/" + currentUser.loginName() + "/.KReminter_fcrontab");
 	KProcess *systemCall = new KProcess(this);
 
 	switch(systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::processCrashed, true); //Process crashed
-			break;
 		}
 		case -2: {
 			d->errorCall->handleError(ErrorHandling::processNotStarted, true); //Process could not be started
-			break;
 		}
 		case 1: {
-			d->errorCall->handleError(ErrorHandling::fcronError, true); //Fcron error code
-			break;
+			d->errorCall->handleError(ErrorHandling::fcronError, true); //fcron error code
 		}
 	}
 
-	if(!checkUserPermissions()) {
-		if(d->errorCall->handleError(ErrorHandling::adminDenyFile)) {
-			if(!window()->close()) {
-				d->errorCall->handleError(ErrorHandling::windowClose);
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
+	//It is assumed that the function completes successfuly because if there is an error,
+	//the ErrorHandling class will be called internally
+	checkUserPermissions();
 
 	//Tell fcrontab to pipe the user's current fcrontab file into a temporary file
 	switch(system(cmdInput->toLocal8Bit().constData())) {
 		case -1: {
-			d->errorCall->handleError(ErrorHandling::systemFunction); //general error
+			d->errorCall->handleError(ErrorHandling::systemFunction, true); //general error
 		}
 		case 1: {
-			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError, true); //fcron error code
 		}
 	}
 
-	//Open the new temporary copy of the user's fcrontab file
+	//Open the temporary copy of the user's fcrontab file
 	if(fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
 		if(((fcrontabFile.readAll()).trimmed()).isEmpty()) {
-			if(!writeReminder(&fcrontabFile)) {
-				fcrontabFile.close(); //write error
-				d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
+			if(!writeReminder(&fcrontabFile)) { //write error
+				fileError = fcrontabFile.error();
+				fcrontabFile.close();
+				d->errorCall->handleError(ErrorHandling::writeReminderToFile, true, fileError);
 			}
 
 			fcrontabFile.close();
@@ -258,139 +252,99 @@ void NewReminderWindow::saveReminder()
 
 			if(fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
 				if(!writeReminder(&fcrontabFile)) { //write error
+					fileError = fcrontabFile.error();
 					fcrontabFile.close();
-					d->errorCall->handleError(ErrorHandling::writeReminderToFile, fcrontabFile.error());
+					d->errorCall->handleError(ErrorHandling::writeReminderToFile, true, fileError);
 				}
 
 				fcrontabFile.close();
 			} else {
-				d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
+				d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
 			}
 		}
 	} else {
-		d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, fcrontabFile.error()); //open error
+		d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
 	}
 
 	switch(systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
 		case -1: {
-			d->errorCall->handleError(ErrorHandling::processCrashed); //Process crashed
+			d->errorCall->handleError(ErrorHandling::processCrashed, true); //Process crashed
 		}
 		case -2: {
-			d->errorCall->handleError(ErrorHandling::processNotStarted); //Process could not be started
+			d->errorCall->handleError(ErrorHandling::processNotStarted, true); //Process could not be started
 		}
 		case 1: {
-			d->errorCall->handleError(ErrorHandling::fcronError); //Fcron error code
+			d->errorCall->handleError(ErrorHandling::fcronError, true); //Fcron error code
 		}
 		default: {
 			if(!fcrontabFile.remove()) {
-				d->errorCall->handleError(ErrorHandling::fileDelete, fcrontabFile.error()); //delete error
+				d->errorCall->handleError(ErrorHandling::fileDelete, true, fcrontabFile.error()); //delete error
 			}
 
 			if(!window()->close()) {
 				window()->hide();
-				d->errorCall->handleError(ErrorHandling::windowClose);
+				d->errorCall->handleError(ErrorHandling::windowClose, true);
 			}
 		}
 	}
 }
 
 /*
- * Check if both fcron.deny and fcron.allow exist.
- * (fcron.deny does not exist but fcron.allow exists then only those in fcron.allow are allowed to use fcron)
- * (fcron.deny exists but fcron.allow does not exist then only those not in fcron.deny are allowed to use fcron)
- * (Neither fcron.deny and fcron.allow exists means that everyone is allowed to use fcron)
- *
- * Check if the user has read and write access to the existing files.
- * If not, get read and write permissions for both files.
- * If so, check if the user is listed in either file.
- *
- * If the user is in the deny list, remove them.
- * If the user is in the allow list, do nothing.
- * If the user is not in the allow list add them to it.
- *
- * Note: After this function has checked whether or not fcron.deny and fcron.allow exists,
- * this function assumes that the file(s) will continue to exist throughout the execution of this function
- * because there is no guarantee that the file(s) have not been deleted (even with file locks). Good ol' OS!
- *
- *
- * TODO: Check return values. There will be incorrect!
- * False == this function has failed
+ * TODO: Implement error value conversion from QVariant
  */
 bool NewReminderWindow::checkUserPermissions()
 {
 	QFile denyFile("/usr/local/etc/fcron.deny"), allowFile("/usr/local/etc/fcron.allow");
 	QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
-	QFile::FileError denyError, allowError;
+	//QFile::FileError denyError = QFile::NoError, allowError = QFile::NoError;
 	QString line;
-	bool userFoundInDeny = false, userFoundinAllow = false;
+	ActionReply reply;
+	//bool userFoundInDeny = false, userFoundinAllow = false;
 	KUser currentUser;
 
 	if(!checkFilePermissions(&denyFile, &allowFile)) {
-		; //Ask for root access here, so KReminder can read/write from and to the file(s)
-	}
+		QVariantMap args;
+		Action rwFiles("org.kde.auth.kreminder.rwfcrontab");
 
-	if(denyFile.exists()) {
-		if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-			while(!inputDenyFile.atEnd()) {
-				line = inputDenyFile.readLine();
+		rwFiles.setHelperID("org.kde.auth.kreminder");
+		args["fcron.deny"] = "/usr/local/etc/fcron.deny";
+		args["fcron.allow"] = "/usr/local/etc/fcron.allow";
+		rwFiles.setArguments(args);
 
-				if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
-					denyError = denyFile.error();
-					denyFile.close();
-					d->errorCall->handleError(ErrorHandling::inputDenyRead, true, denyError, inputDenyFile.status(), line.isNull());
+		reply = rwFiles.execute();
+
+		if(reply.failed()) {
+			QVariantMap errorArgs(reply.data());
+
+			if(reply.type() == ActionReply::KAuthError) { //Internal KAuth error
+				d->errorCall->handleKAuthError(ErrorHandling::kauthintneralerror, true);
+			}
+			else if(reply.type() == ActionReply::HelperError) { //Self generated error code
+				/*int originalFileError = errorArgs.value("originalFileError").toInt();
+				int newFileError = errorArgs.value("newFileError").toInt();
+				int streamError = errorArgs.value("streamError").toInt();
+				bool stringError = errorArgs.value("stringError").toBool();
+				bool fileRemoveError = errorArgs.value("fileRemovalError").toBool();*/
+
+				/*if(errorArgs.value("originalFileError").convert()) {
+					if(errorArgs.value("newFileError").convert()) {
+						if(errorArgs.value("streamError").convert()) {
+							if(errorArgs.value("stringError")) {
+								if(errorArgs.value("fileRemovalError")) {
+					d->errorCall->handleKAuthError(ErrorHandling::kauthcustomerror, true, errorArgs.value("originalFileError"), errorArgs.value("newFileError"), errorArgs.value("streamError"), errorArgs.value("stringError"), errorArgs.value("fileRemovalError"));
 				}
+				else {
+					;
+				}*/
 
-				if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
-					denyFile.close();
-					userFoundInDeny = true;
-					break;
-				}
+				d->errorCall->handleKAuthError(ErrorHandling::kauthcustomerror, true);
 			}
 
-			denyFile.close();
-		}
-		else {
-			d->errorCall->handleError(ErrorHandling::denyFileOpen, true, denyFile.error(), QTextStream::Ok);
-		}
-	}
-
-	if(!userFoundInDeny) {
-		if(allowFile.exists()) {
-			if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-				while(!inputAllowFile.atEnd()) {
-					line = inputAllowFile.readLine();
-
-					if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
-						allowError = allowFile.error();
-						allowFile.close();
-						d->errorCall->handleError(ErrorHandling::inputAllowRead, true, allowError, inputAllowFile.status(), line.isNull());
-					}
-					else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
-						allowFile.close();
-						userFoundinAllow = true;
-						break; //Found the user's username
-					}
-				}
-
-				allowFile.close();
-			}
-			else {
-				d->errorCall->handleError(ErrorHandling::allowFileOpen, true, allowFile.error(), QTextStream::Ok);
-			}
+			return false;
 		}
 	}
 
-	if((userFoundInDeny) || (!userFoundinAllow)) {
-		//if(editFiles(&denyFile, &allowFile, userFoundInDeny, userFoundinAllow)) {
-		return true;
-		//}
-		//else {
-			; //Error in editing files
-		//}
-	}
-	else {
-		return true;
-	}
+	return true;
 }
 
 /*
@@ -424,9 +378,9 @@ bool NewReminderWindow::checkFilePermissions(QFile* denyFile, QFile* allowFile)
 
 //TODO: add year
 //TODO: repeating reminders
-const char *NewReminderWindow::formatReminder(QString reminder)
+const char *NewReminderWindow::formatReminder()
 {
-	reminder = QString::number(d->timeEdit->time().minute()); //Minute
+	QString reminder(QString::number(d->timeEdit->time().minute())); //Minute
 
 	//Optional arguments may be added with a '&' prepended
 	//ie. run the command after the conditions are successfuly met five times: "&5, <min> <hr> <day-of-month> <month> <day-of-week> <command>"
@@ -450,9 +404,7 @@ const char *NewReminderWindow::formatReminder(QString reminder)
  */
 bool NewReminderWindow::writeReminder(QFile *fcrontabFile)
 {
-	QString reminder;
-
-	if (!fcrontabFile->write(formatReminder(reminder))) {
+	if(!fcrontabFile->write(formatReminder())) {
 		return false; //write error
 	}
 
@@ -469,7 +421,7 @@ void NewReminderWindow::sendToMenu()
 
 	if(!window()->close()) {
 		window()->hide();
-		d->errorCall->handleError(ErrorHandling::windowClose);
+		d->errorCall->handleError(ErrorHandling::windowClose, false);
 	}
 }
 

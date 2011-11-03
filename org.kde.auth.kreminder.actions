@@ -1,11 +1,5 @@
-[org.kde.auth.kreminder.rwdeny]
-Name=fcron.deny privileges
-Description=KReminder would like the user to change the permissions of /usr/local/etc/fcron.deny
-Policy=auth_admin
-Persistence=session
-
-[org.kde.auth.kreminder.rwallow]
-Name=fcron.allow privileges
-Description=KReminder would like the user to change the permissions of /usr/local/etc/fcron.allow
+[org.kde.auth.kreminder.rwfcrontab]
+Name=Read/write privileges for fcron.deny and fcron.allow
+Description=
 Policy=auth_admin
 Persistence=session

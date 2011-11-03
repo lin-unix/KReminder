@@ -22,11 +22,120 @@
 #include <KDE/KProcess>
 
 #include <QtCore/QStringList>
-#include <QtCore/QVariantMap>
 #include <QtCore/QString>
 
+
+/*
+ * Check if both fcron.deny and fcron.allow exist.
+ * (fcron.deny does not exist but fcron.allow exists then only those in fcron.allow are allowed to use fcron)
+ * (fcron.deny exists but fcron.allow does not exist then only those not in fcron.deny are allowed to use fcron)
+ * (Neither fcron.deny and fcron.allow exists means that everyone is allowed to use fcron)
+ *
+ * Check if the user has read and write access to the existing files.
+ * If not, get read and write permissions for both files.
+ * If so, check if the user is listed in either file.
+ *
+ * If the user is in the deny list, remove them.
+ * If the user is in the allow list, do nothing.
+ * If the user is not in the allow list add them to it.
+ *
+ * Note: After this function has checked whether or not fcron.deny and fcron.allow exists,
+ * this function assumes that the file(s) will continue to exist throughout the execution of this function
+ * because there is no guarantee that the file(s) have not been deleted (even with file locks). Good ol' OS!
+ */
+
+
+ActionReply KAuthHelper::rwfcrontab(QVariantMap args)
+{
+	ActionReply reply = readDeny(args);
+
+	if(reply.failed()) {
+		return reply;
+	}
+
+	return readAllow(args);
+}
+
+ActionReply KAuthHelper::readDeny(QVariantMap args)
+{
+	KUser currentUser;
+	bool userFoundInDeny = false;
+	QString denyFilename = args["fcron.deny"].toString(), line;
+	QFile denyFile(denyFilename);
+	QTextStream inputDenyFile(&denyFile);
+	ActionReply reply;
+
+	if(denyFile.exists()) {
+		if(denyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			while(!inputDenyFile.atEnd()) {
+				line = inputDenyFile.readLine();
+
+				if((line.isNull()) || (inputDenyFile.status() != QTextStream::Ok) || (denyFile.error() != QFile::NoError)) {
+					return setReturnValue(true, &denyFile, NULL, line.isNull(), inputDenyFile.status());
+				}
+
+				if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is in this list
+					denyFile.close();
+					userFoundInDeny = true;
+					break;
+				}
+			}
+
+			denyFile.close();
+		}
+		else {
+			return setReturnValue(true, &denyFile);
+		}
+	}
+
+	if(userFoundInDeny) {
+		reply = editDeny(args);
+	}
+
+	return reply;
+}
+
+ActionReply KAuthHelper::readAllow(QVariantMap args)
+{
+	KUser currentUser;
+	QString line;
+	bool userFoundInAllow = false;
+	QString allowFilename = args["fcron.allow"].toString();
+	QFile allowFile(allowFilename);
+	QTextStream inputAllowFile(&allowFile);
+	ActionReply reply;
+
+	if(allowFile.exists()) {
+		if(allowFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			while(!inputAllowFile.atEnd()) {
+				line = inputAllowFile.readLine();
+
+				if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
+					return setReturnValue(true, &allowFile, NULL, line.isNull(), inputAllowFile.status());
+				}
+				else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
+					allowFile.close();
+					userFoundInAllow = true;
+					break; //Found the user's username
+				}
+			}
+
+			allowFile.close();
+		}
+		else {
+			return setReturnValue(true, &allowFile);
+		}
+	}
+
+	if(!userFoundInAllow) {
+		reply = editAllow(args);
+	}
+
+	return reply;
+}
+
 //Change the contents of fcron.deny
-ActionReply KAuthHelper::IODeny(QVariantMap args)
+ActionReply KAuthHelper::editDeny(QVariantMap args)
 {
 	KUser currentUser;
 	KProcess *systemCall = new KProcess(this);
@@ -36,60 +145,67 @@ ActionReply KAuthHelper::IODeny(QVariantMap args)
 	QTextStream inputStream(&originalFile);
 
 	if(!originalFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		return setReturnValue(&originalFile);
+		return setReturnValue(true, &originalFile);
 	}
 
 	if(!newFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		return setReturnValue(NULL, &newFile);
+		return setReturnValue(true, NULL, &newFile);
 	}
 
 	while(!inputStream.atEnd()) {
 		line = inputStream.readLine();
 
 		if((originalFile.error() != QFile::NoError) || (inputStream.status() != QTextStream::Ok) || (line.isNull())) {
-			return setReturnValue(&originalFile, &newFile, line.isNull(), inputStream.status());
+			return setReturnValue(true, &originalFile, &newFile, line.isNull(), inputStream.status());
 		}
 
 		if(!line.contains(currentUser.loginName(), Qt::CaseSensitive)) { //if the current user is not in this list
 			if(newFile.write(line.toLocal8Bit().constData()) == -1) {
-				return setReturnValue(&originalFile, &newFile, line.isNull(), inputStream.status());
+				return setReturnValue(true, &originalFile, &newFile, line.isNull(), inputStream.status());
 			}
 		}
 	}
 
 	if(!systemCall->execute(QString("mv " + newFilename + " /usr/local/etc/fcron.deny"), QStringList(), -1)) {
-		return setReturnValue(&originalFile, &newFile);
+		return setReturnValue(true, &originalFile, &newFile);
 	}
 
-	return setReturnValue();
+	return setReturnValue(false);
 }
 
 //Change the contents of fcron.allow
-ActionReply KAuthHelper::IOAllow(QVariantMap args)
+ActionReply KAuthHelper::editAllow(QVariantMap args)
 {
 	KUser currentUser;
 	QFile file(args["filename"].toString());
 
 	if(!file.open(QIODevice::Append | QIODevice::Text)) {
-		return setReturnValue(&file);
+		return setReturnValue(true, &file);
 	}
 
-	file.write(currentUser.loginName().toLocal8Bit().constData()); //Any errors will be found and returned in the line below
-	return setReturnValue(&file);
+	if(!file.write(currentUser.loginName().toLocal8Bit().constData())) {
+		return setReturnValue(true, &file);
+	}
+	else {
+		return setReturnValue(false, &file);
+	}
 }
 
-ActionReply KAuthHelper::setReturnValue(QFile *originalFile, QFile *newFile, bool isStringNull, QTextStream::Status streamStatus)
+ActionReply KAuthHelper::setReturnValue(bool isError, QFile *fileOne, QFile *fileTwo, bool isStringNull, QTextStream::Status streamStatus)
 {
 	ActionReply reply = ActionReply::HelperErrorReply;
 	QVariantMap returnData;
 
-	returnData["originalFileError"] = originalFile->error();
-	returnData["newFileError"] = newFile->error();
+	returnData["isError"] = isError;
+	returnData["originalFileError"] = fileOne->error();
+	returnData["newFileError"] = fileTwo->error();
 	returnData["stringError"] = isStringNull;
 	returnData["streamError"] = streamStatus;
-	returnData["fileRemovalError"] = newFile->remove();
+	returnData["fileRemovalError"] = fileTwo->remove();
 
-	originalFile->close();
+	fileOne->close();
+	fileTwo->close();
+
 	reply.setData(returnData);
 	return reply;
 }

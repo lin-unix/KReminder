@@ -37,7 +37,7 @@ private:
     NewReminderWindowPrivate *const d;
 
     void setupObjects();
-	const char *formatReminder(QString reminder = NULL);
+	const char *formatReminder();
 	bool writeReminder(QFile *fcrontabFile = NULL);
 	bool checkUserPermissions();
 	bool checkFilePermissions(QFile *denyFile = NULL, QFile *allowFile = NULL);

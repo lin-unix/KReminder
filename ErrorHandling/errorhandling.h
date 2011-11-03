@@ -52,17 +52,19 @@ public:
 		processNotStarted = 8,
 		fcronError = 9,
 		systemFunction = 10,
-		adminDenyFile = 11,
-		adminAllowFile = 12,
+		kauthintneralerror = 11,
+		kauthcustomerror = 12,
 		denyFileOpen = 13,
 		allowFileOpen = 14,
 		inputDenyRead = 15,
 		inputAllowRead = 16,
 		writeAllowFile = 17,
 		writeDenyFile = 18,
+		cannotConnect = 19
 	};
 
-	bool handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);
+	void handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);
+	void handleKAuthError(errorNumber error = noError, bool endProgram = true, QFile::FileError originalFileError = QFile::NoError, QFile::FileError newFileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false, bool fileRemovalError = false);
 
 private:
     ErrorHandlingPrivate *const d;

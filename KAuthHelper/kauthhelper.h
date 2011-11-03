@@ -25,17 +25,21 @@
 #include <QtCore/QObject>
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>
+#include <QtCore/QVariantMap>
 
 using namespace KAuth;
 
 class KAuthHelper : public QObject
 {
 private:
-	ActionReply setReturnValue(QFile *originalFile = NULL, QFile *newFile = NULL, bool isStringNull = false, QTextStream::Status streamStatus = QTextStream::Ok);
+	ActionReply setReturnValue(bool isError = false, QFile *fileOne = NULL, QFile *fileTwo = NULL, bool isStringNull = false, QTextStream::Status streamStatus = QTextStream::Ok);
 
 private slots:
-	ActionReply IODeny(QVariantMap args);
-	ActionReply IOAllow(QVariantMap args);
+	ActionReply rwfcrontab(QVariantMap args);
+	ActionReply readDeny(QVariantMap args);
+	ActionReply readAllow(QVariantMap args);
+	ActionReply editDeny(QVariantMap args);
+	ActionReply editAllow(QVariantMap args);
 };
 
 #endif //KAUTHHELPER_H

@@ -28,110 +28,206 @@
 class ErrorHandlingPrivate
 {
 public:
+	KDialog *errorDialog;
 	QWidget *parent;
 	bool close;
 };
 
 ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
-    d->parent = parent;
+	d->errorDialog = new KDialog(0);
+
+	d->errorDialog->setButtons(KDialog::User1 | KDialog::User2);
+	d->errorDialog->setDefaultButton(KDialog::User1);
+	d->errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString(i18n("Quit")), KIcon("application-exit", KIconLoader::global()), QString(i18n("Do not report error")), QString(i18n("Quit KReminder"))));
+	d->errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString(i18n("Report Error")), KIcon("tools-report-bug", KIconLoader::global()), QString(i18n("Launch wizard to report error")), QString(i18n("Open Dr. Konqi to report an error"))));
+
+	d->errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
+	d->errorDialog->setCaption(i18n("Internal Error"));
+
+	d->parent = parent;
 }
 
 //TODO: Save all errors to log file
 //TODO: Let Dr. Konqi report errors and give it the log file
-bool ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
+void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
 {
-    KDialog *errorDialog = new KDialog(0);
-
-    errorDialog->setButtons(KDialog::User1 | KDialog::User2);
-    errorDialog->setDefaultButton(KDialog::User1);
-	errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString(i18n("Quit")), KIcon("application-exit", KIconLoader::global()), QString(i18n("Do not report error")), QString(i18n("Quit KReminder"))));
-	errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString(i18n("Report Error")), KIcon("tools-report-bug", KIconLoader::global()), QString(i18n("Launch wizard to report error")), QString(i18n("Open Dr. Konqi to report an error"))));
-
-    errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
-    errorDialog->setCaption(i18n("Internal Error"));
-
-    if(!connect(errorDialog, SIGNAL(user2Clicked()), errorDialog, SLOT(reject()))) {
-		// Log problem with connecting signal with slot
-		return true;
+	if(!connect(d->errorDialog, SIGNAL(user2Clicked()), d->errorDialog, SLOT(reject()))) {
+		//Log to file
+		//Add code here to run Dr. Konqi
+		exit(EXIT_FAILURE);
 	}
 
     switch(error) {
         case windowClose: {
-			if(errorDialog->exec()) // When using exec(), window is modal
-				return true; // If exec() returns 0 (which is a rejection to run Dr. Konqi because the user clicked "Quit"), then end the program
+			if(d->errorDialog->exec()) {
+				//Log to file
+				exit(EXIT_FAILURE);
+			}
 			else {
-				return false;
-				//Add code here to run Dr. Konqi
+				//Add code here to run Dr. Konqi, then exit program
 			}
 
             break;
         }
         case fcrontabFileOpen: {
+			if(d->errorDialog->exec()) {
+				//Log to file
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case writeReminderToFile: {
+			if(d->errorDialog->exec()) {
+				//Log to file
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case fileDelete: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case processCrashed: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case processNotStarted: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case fcronError: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case systemFunction: {
-            break;
-        }
-        case adminDenyFile: {
-            break; //Ask for root access
-        }
-        case adminAllowFile: {
-			QVariantMap args;
-			Action writeAllow("org.kde.auth.kreminder.rwallow");
-
-			writeAllow.setHelperID("org.kde.auth.kreminder");
-			args["filename"] = "/usr/local/etc/fcron.allow";
-			writeAllow.setArguments(args);
-
-			ActionReply reply = writeAllow.execute();
-
-			if(reply.failed()) {
-				if(reply.type() == ActionReply::KAuthError) {
-					; //Internal KAuth error
-				}
-				else if(reply.type() == ActionReply::HelperError) {
-					; //Self generated error code provided
-				}
-
-				return true; //Terminate program
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
 			}
 
-			return false;
             break;
         }
         case denyFileOpen: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case allowFileOpen: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case inputDenyRead: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         case inputAllowRead: {
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
             break;
         }
         default: {
-            return true; //why would this be run? Save to log if this happens
+			if(d->errorDialog->exec()) {
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Why would this be run? Save to log if this happens
+				//Add code here to run Dr. Konqi, then exit program
+			}
         }
     }
+}
 
-    return true;
+void ErrorHandling::handleKAuthError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError originalFileError, QFile::FileError newFileError, QTextStream::Status textStreamError, bool isStringNull, bool fileRemovalError)
+{
+	switch(error) {
+		case kauthintneralerror: {
+			if(d->errorDialog->exec()) {
+				//Log to file
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
+			break;
+		}
+		case kauthcustomerror: {
+			if(d->errorDialog->exec()) {
+				//Log to file
+				exit(EXIT_FAILURE);
+			}
+			else {
+				//Add code here to run Dr. Konqi, then exit program
+			}
+
+			break;
+		}
+		default: {
+			if(d->errorDialog->exec()) { // When using exec(), window is modal
+				exit(EXIT_FAILURE); // If exec() returns 0 (which is a rejection to run Dr. Konqi because the user clicked "Quit"), then end the program
+			}
+			else {
+				//Why would this be run? Save to log if this happens
+				//Add code here to run Dr. Konqi, then exit program
+			}
+		}
+	}
 }
 
 ErrorHandling::~ErrorHandling() {

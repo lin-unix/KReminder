@@ -16,21 +16,33 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "errorhandling.h"
 
 #include <KDE/KDialog>
 #include <KDE/KLocale>
 #include <KDE/KApplication>
+#include <KDE/KUser>
 
 #include <QtGui/QLabel>
+#include <QtCore/QFile>
+
+#include <iostream>
 
 class ErrorHandlingPrivate
 {
 public:
 	KDialog *errorDialog;
 	QWidget *parent;
-	bool close;
+
+	ErrorHandling::errorNumber error;
+	QTextStream::Status textStreamError;
+	QFile::FileError fileError;
+	QFile::FileError originalFileError;
+	QFile::FileError newFileError;
+	bool endProgram;
+	bool isStringNull;
+	bool fileRemovalError;
+	bool connectError;
 };
 
 ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
@@ -44,6 +56,10 @@ ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 	d->errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
 	d->errorDialog->setCaption(i18n("Internal Error"));
 
+	if(!connect(d->errorDialog, SIGNAL(user2Clicked()), d->errorDialog, SLOT(reject()))) {
+		handleConnectError();
+	}
+
 	d->parent = parent;
 }
 
@@ -51,16 +67,12 @@ ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 //TODO: Let Dr. Konqi report errors and give it the log file
 void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
 {
-	if(!connect(d->errorDialog, SIGNAL(user2Clicked()), d->errorDialog, SLOT(reject()))) {
-		//Log to file
-		//Add code here to run Dr. Konqi
-		exit(EXIT_FAILURE);
-	}
+	setErrors(error, endProgram, fileError, textStreamError, isStringNull);
+	writeToLog();
 
     switch(error) {
         case windowClose: {
 			if(d->errorDialog->exec()) {
-				//Log to file
 				exit(EXIT_FAILURE);
 			}
 			else {
@@ -71,7 +83,6 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgra
         }
         case fcrontabFileOpen: {
 			if(d->errorDialog->exec()) {
-				//Log to file
 				exit(EXIT_FAILURE);
 			}
 			else {
@@ -82,7 +93,6 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgra
         }
         case writeReminderToFile: {
 			if(d->errorDialog->exec()) {
-				//Log to file
 				exit(EXIT_FAILURE);
 			}
 			else {
@@ -195,10 +205,11 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgra
 
 void ErrorHandling::handleKAuthError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError originalFileError, QFile::FileError newFileError, QTextStream::Status textStreamError, bool isStringNull, bool fileRemovalError)
 {
-	switch(error) {
+	setKAuthErrors(error, endProgram, originalFileError, newFileError, textStreamError, isStringNull, fileRemovalError);
+
+	switch((int)error) {
 		case kauthintneralerror: {
 			if(d->errorDialog->exec()) {
-				//Log to file
 				exit(EXIT_FAILURE);
 			}
 			else {
@@ -209,7 +220,6 @@ void ErrorHandling::handleKAuthError(ErrorHandling::errorNumber error, bool endP
 		}
 		case kauthcustomerror: {
 			if(d->errorDialog->exec()) {
-				//Log to file
 				exit(EXIT_FAILURE);
 			}
 			else {
@@ -223,11 +233,87 @@ void ErrorHandling::handleKAuthError(ErrorHandling::errorNumber error, bool endP
 				exit(EXIT_FAILURE); // If exec() returns 0 (which is a rejection to run Dr. Konqi because the user clicked "Quit"), then end the program
 			}
 			else {
-				//Why would this be run? Save to log if this happens
 				//Add code here to run Dr. Konqi, then exit program
 			}
 		}
 	}
+}
+
+void ErrorHandling::handleConnectError()
+{
+	d->connectError = true;
+	writeToLog();
+
+	exit(EXIT_FAILURE);
+}
+
+void ErrorHandling::setErrors(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
+{
+	d->error = error;
+	d->endProgram = endProgram;
+	d->fileError = fileError;
+	d->textStreamError = textStreamError;
+	d->isStringNull = isStringNull;
+}
+
+void ErrorHandling::setKAuthErrors(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError originalFileError, QFile::FileError newFileError, QTextStream::Status textStreamError, bool isStringNull, bool fileRemovalError)
+{
+	d->error = error;
+	d->endProgram = endProgram;
+	d->originalFileError = originalFileError;
+	d->newFileError = newFileError;
+	d->textStreamError = textStreamError;
+	d->isStringNull = isStringNull;
+	d->fileRemovalError = fileRemovalError;
+}
+
+void ErrorHandling::writeToLog()
+{
+	KUser currentUser;
+	QFile logFile(currentUser.homeDir() + ".KReminder.log");
+
+	//Will this append or overwrite?
+	if(!logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		exit(EXIT_FAILURE);
+	}
+
+	QString errors("#####");
+	errors.append("Error Number: " + QString::number((int)d->error) + "\n");
+
+	if(d->endProgram) {
+		errors.append("End Program: true\n");
+	}
+	else {
+		errors.append("End Program: false\n");
+	}
+
+	errors.append("File Error: " + QString::number((int)d->fileError) + "\n");
+	errors.append("Original File Error: " + QString::number((int)d->originalFileError) + "\n");
+	errors.append("New File Error: " + QString::number((int)d->newFileError) + "\n");
+	errors.append("Text Stream Error: " + QString::number((int)d->textStreamError) + "\n");
+
+	if(d->isStringNull) {
+		errors.append("Is String Null: true\n");
+	}
+	else {
+		errors.append("Is String Null: false\n");
+	}
+
+	if(d->fileRemovalError) {
+		errors.append("File Removed: true\n");
+	}
+	else {
+		errors.append("File Removed: false\n");
+	}
+
+	if(d->connectError) {
+		errors.append("Connect Error: true\n");
+	}
+
+	errors.append("#####\n\n");
+
+	logFile.write(errors.toLocal8Bit().constData());
+	logFile.close();
 }
 
 ErrorHandling::~ErrorHandling() {

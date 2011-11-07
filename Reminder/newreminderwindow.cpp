@@ -404,7 +404,7 @@ const char *NewReminderWindow::formatReminder()
  */
 bool NewReminderWindow::writeReminder(QFile *fcrontabFile)
 {
-	if(!fcrontabFile->write(formatReminder())) {
+	if(fcrontabFile->write(formatReminder()) <= 0) {
 		return false; //write error
 	}
 

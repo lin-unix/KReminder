@@ -43,28 +43,31 @@ public:
     enum errorNumber {
 		noError = 0,
 		windowClose = 1,
-		windowCloseQuit = 2,
-		selectedOption = 3,
-		fcrontabFileOpen = 4,
-		writeReminderToFile = 5,
-		fileDelete = 6,
-		processCrashed = 7,
-		processNotStarted = 8,
-		fcronError = 9,
-		systemFunction = 10,
-		kauthintneralerror = 11,
-		kauthcustomerror = 12,
-		denyFileOpen = 13,
-		allowFileOpen = 14,
-		inputDenyRead = 15,
-		inputAllowRead = 16,
-		writeAllowFile = 17,
-		writeDenyFile = 18,
-		cannotConnect = 19
+		selectedOption = 2,
+		fcrontabFileOpen = 3,
+		writeReminderToFile = 4,
+		fileDelete = 5,
+		processCrashed = 6,
+		processNotStarted = 7,
+		fcronError = 8,
+		systemFunction = 9,
+		kauthintneralerror = 10,
+		kauthcustomerror = 11,
+		denyFileOpen = 12,
+		allowFileOpen = 13,
+		inputDenyRead = 14,
+		inputAllowRead = 15,
+		writeAllowFile = 16,
+		writeDenyFile = 17,
+		cannotConnect = 18
 	};
 
 	void handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);
 	void handleKAuthError(errorNumber error = noError, bool endProgram = true, QFile::FileError originalFileError = QFile::NoError, QFile::FileError newFileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false, bool fileRemovalError = false);
+	void handleConnectError();
+	void setErrors(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);
+	void setKAuthErrors(errorNumber error = noError, bool endProgram = true, QFile::FileError originalFileError = QFile::NoError, QFile::FileError newFileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false, bool fileRemovalError = false);
+	void writeToLog();
 
 private:
     ErrorHandlingPrivate *const d;

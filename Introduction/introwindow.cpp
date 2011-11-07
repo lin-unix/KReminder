@@ -61,6 +61,7 @@ IntroWindow::IntroWindow(QWidget *parent) : KXmlGuiWindow(parent), d(new IntroWi
 void IntroWindow::setupObjects()
 {
     QWidget *mainWidget = new QWidget();
+	ErrorHandling *callErrorHandler = new ErrorHandling();
 
     QRadioButton *addReminderRadio = new QRadioButton(i18n("Add New Reminder"));
     QRadioButton *addNoteRadio = new QRadioButton(i18n("Add New Note"));
@@ -104,10 +105,17 @@ void IntroWindow::setupObjects()
     vWindowLayout->addWidget(hSeparator);
     vWindowLayout->addWidget(buttonBoxWidget);
 
-    connect(addReminderRadio, SIGNAL(clicked(bool)), this, SLOT(setAddReminderToolTip(bool)));
-    connect(addNoteRadio, SIGNAL(clicked(bool)), this, SLOT(setAddNoteToolTip(bool)));
+    if(!connect(addReminderRadio, SIGNAL(clicked(bool)), this, SLOT(setAddReminderToolTip(bool)))) {
+		callErrorHandler->handleConnectError();
+	}
 
-    connect(d->closeButton, SIGNAL(clicked(bool)), this, SLOT(close()));
+    if(!connect(addNoteRadio, SIGNAL(clicked(bool)), this, SLOT(setAddNoteToolTip(bool)))) {
+		callErrorHandler->handleConnectError();
+	}
+
+    if(!connect(d->closeButton, SIGNAL(clicked(bool)), this, SLOT(close()))) {
+		callErrorHandler->handleConnectError();
+	}
 
     mainWidget->setLayout(vWindowLayout);
     setCentralWidget(mainWidget);
@@ -156,6 +164,6 @@ void IntroWindow::next()
 
     if(!window()->close()) {
 		window()->hide();
-		callErrorHandler->handleError(ErrorHandling::windowCloseQuit);
+		callErrorHandler->handleError(ErrorHandling::windowClose, true);
 	}
 }

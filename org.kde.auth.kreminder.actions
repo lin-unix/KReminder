@@ -1,5 +1,10 @@
 [org.kde.auth.kreminder.rwfcrontab]
 Name=Read/write privileges for fcron.deny and fcron.allow
-Description=
+Description=KReminder is trying to access files and it needs permission to do so.
 Policy=auth_admin
 Persistence=session
+
+[Domain]
+Name=KReminder
+Icon=view-calendar-tasks
+URL=

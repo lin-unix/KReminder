@@ -22,6 +22,7 @@
 #include <KDE/KXmlGuiWindow>
 
 #include <QtCore/QFile>
+#include <QtCore/QVariantMap>
 
 class NewReminderWindowPrivate;
 

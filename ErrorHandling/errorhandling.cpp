@@ -26,8 +26,6 @@
 #include <QtGui/QLabel>
 #include <QtCore/QFile>
 
-#include <iostream>
-
 class ErrorHandlingPrivate
 {
 public:
@@ -48,12 +46,12 @@ public:
 ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 	d->errorDialog = new KDialog(0);
 
-	d->errorDialog->setButtons(KDialog::User1 | KDialog::User2);
+	d->errorDialog->setButtons(KDialog::User2 | KDialog::User1);
 	d->errorDialog->setDefaultButton(KDialog::User1);
-	d->errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString(i18n("Quit")), KIcon("application-exit", KIconLoader::global()), QString(i18n("Do not report error")), QString(i18n("Quit KReminder"))));
 	d->errorDialog->setButtonGuiItem(KDialog::User1, KGuiItem(QString(i18n("Report Error")), KIcon("tools-report-bug", KIconLoader::global()), QString(i18n("Launch wizard to report error")), QString(i18n("Open Dr. Konqi to report an error"))));
+	d->errorDialog->setButtonGuiItem(KDialog::User2, KGuiItem(QString(i18n("Quit")), KIcon("application-exit", KIconLoader::global()), QString(i18n("Do not report error")), QString(i18n("Quit KReminder"))));
 
-	d->errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\n\nWould you like to report this error?")));
+	d->errorDialog->setMainWidget(new QLabel(i18n("Cannot save your reminder.\nWould you like to report this error?")));
 	d->errorDialog->setCaption(i18n("Internal Error"));
 
 	if(!connect(d->errorDialog, SIGNAL(user2Clicked()), d->errorDialog, SLOT(reject()))) {
@@ -270,7 +268,7 @@ void ErrorHandling::setKAuthErrors(ErrorHandling::errorNumber error, bool endPro
 void ErrorHandling::writeToLog()
 {
 	KUser currentUser;
-	QFile logFile(currentUser.homeDir() + ".KReminder.log");
+	QFile logFile(currentUser.homeDir() + "/.KReminder.log");
 
 	//Will this append or overwrite?
 	if(!logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {

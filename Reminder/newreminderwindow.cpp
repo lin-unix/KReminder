@@ -51,6 +51,8 @@
 #include <QtCore/QDate>
 #include <QtCore/QFileInfo>
 
+#include <iostream>
+
 class NewReminderWindowPrivate
 {
 public:
@@ -238,19 +240,9 @@ void NewReminderWindow::saveReminder()
 	}
 
 	//Open the temporary copy of the user's fcrontab file
-	if(fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
-		if(((fcrontabFile.readAll()).trimmed()).isEmpty()) {
-			if(!writeReminder(&fcrontabFile)) { //write error
-				fileError = fcrontabFile.error();
-				fcrontabFile.close();
-				d->errorCall->handleError(ErrorHandling::writeReminderToFile, true, fileError);
-			}
-
-			fcrontabFile.close();
-		} else {
-			fcrontabFile.close(); //close it so that it can be opened for appending
-
-			if(fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
+	if(fcrontabFile.exists()) {
+		if(fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
+			if(((fcrontabFile.readAll()).trimmed()).isEmpty()) {
 				if(!writeReminder(&fcrontabFile)) { //write error
 					fileError = fcrontabFile.error();
 					fcrontabFile.close();
@@ -259,11 +251,26 @@ void NewReminderWindow::saveReminder()
 
 				fcrontabFile.close();
 			} else {
-				d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
+				fcrontabFile.close(); //close it so that it can be opened for appending
+
+				if(fcrontabFile.open(QIODevice::Append | QIODevice::Text)) {
+					if(!writeReminder(&fcrontabFile)) { //write error
+						fileError = fcrontabFile.error();
+						fcrontabFile.close();
+						d->errorCall->handleError(ErrorHandling::writeReminderToFile, true, fileError);
+					}
+
+					fcrontabFile.close();
+				} else {
+					d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
+				}
 			}
+		} else {
+			d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
 		}
-	} else {
-		d->errorCall->handleError(ErrorHandling::fcrontabFileOpen, true, fcrontabFile.error()); //open error
+	}
+	else {
+		d->errorCall->handleError(ErrorHandling::fileNotExist, true); //file does not exist
 	}
 
 	switch(systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
@@ -317,30 +324,40 @@ bool NewReminderWindow::checkUserPermissions()
 			QVariantMap errorArgs(reply.data());
 
 			if(reply.type() == ActionReply::KAuthError) { //Internal KAuth error
+				std::cerr << '\n' << reply.errorCode() << '\n';
 				d->errorCall->handleKAuthError(ErrorHandling::kauthintneralerror, true);
 			}
 			else if(reply.type() == ActionReply::HelperError) { //Self generated error code
-				/*int originalFileError = errorArgs.value("originalFileError").toInt();
-				int newFileError = errorArgs.value("newFileError").toInt();
-				int streamError = errorArgs.value("streamError").toInt();
-				bool stringError = errorArgs.value("stringError").toBool();
-				bool fileRemoveError = errorArgs.value("fileRemovalError").toBool();*/
+				int originalFileError = 0;
+				int newFileError = 0;
+				bool stringError = false;
+				int streamError = 0;
+				bool fileRemovalError = false;
 
-				/*if(errorArgs.value("originalFileError").convert()) {
-					if(errorArgs.value("newFileError").convert()) {
-						if(errorArgs.value("streamError").convert()) {
-							if(errorArgs.value("stringError")) {
-								if(errorArgs.value("fileRemovalError")) {
-					d->errorCall->handleKAuthError(ErrorHandling::kauthcustomerror, true, errorArgs.value("originalFileError"), errorArgs.value("newFileError"), errorArgs.value("streamError"), errorArgs.value("stringError"), errorArgs.value("fileRemovalError"));
+				//errorArgs.value("isError") is ignored because reply.type() != SUCCESS, so isError is redundant
+
+				if(errorArgs.value("originalFileError").canConvert(QVariant::Int)) {
+					originalFileError = errorArgs.value("originalFileError").toInt();
 				}
-				else {
-					;
-				}*/
 
-				d->errorCall->handleKAuthError(ErrorHandling::kauthcustomerror, true);
+				if(errorArgs.value("newFileError").canConvert(QVariant::Int)) {
+					newFileError = errorArgs.value("newFileError").toInt();
+				}
+
+				if(errorArgs.value("stringError").canConvert(QVariant::Bool)) {
+					stringError = errorArgs.value("stringError").toBool();
+				}
+
+				if(errorArgs.value("streamError").canConvert(QVariant::Int)) {
+					streamError = errorArgs.value("streamError").toInt();
+				}
+
+				if(errorArgs.value("fileRemovalError").canConvert(QVariant::Bool)) {
+					fileRemovalError = errorArgs.value("fileRemovalError").toBool();
+				}
+
+				d->errorCall->handleKAuthError(ErrorHandling::kauthcustomerror, true, (QFile::FileError)originalFileError, (QFile::FileError)newFileError, (QTextStream::Status)streamError, stringError, fileRemovalError);
 			}
-
-			return false;
 		}
 	}
 
@@ -358,17 +375,19 @@ bool NewReminderWindow::checkFilePermissions(QFile* denyFile, QFile* allowFile)
 
 	if(denyFile->exists()) {
 		//Note: On Unix, Qt returns whether the owner has read/write access (not the user!)
-		if(((denyFileInfo.ownerId() == currentUser.uid()) && (denyFileInfo.isReadable()) && (denyFileInfo.isWritable())) &&
-			((denyFileInfo.groupId() == currentUser.gid()) && (denyFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup)))) {
-			return true;
-		}
-	}
+		if(((denyFileInfo.ownerId() == currentUser.uid()) && (denyFileInfo.isReadable()) && (denyFileInfo.isWritable())) ||
+			((denyFileInfo.groupId() == currentUser.gid()) && (denyFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup))) ||
+			(denyFileInfo.permission(QFile::ReadOther | QFile::WriteOther))) {
 
-	if(allowFile->exists()) {
-		//Note: On Unix, Qt returns whether the owner has read/write access (not the user!)
-		if(((allowFileInfo.ownerId() == currentUser.uid()) && (allowFileInfo.isReadable()) && (allowFileInfo.isWritable())) &&
-			((allowFileInfo.groupId() == currentUser.gid()) && (allowFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup)))) {
-			return true;
+			if(allowFile->exists()) {
+				//Note: On Unix, Qt returns whether the owner has read/write access (not the user!)
+				if(((allowFileInfo.ownerId() == currentUser.uid()) && (allowFileInfo.isReadable()) && (allowFileInfo.isWritable())) ||
+					((allowFileInfo.groupId() == currentUser.gid()) && (allowFileInfo.permission(QFile::ReadGroup | QFile::WriteGroup))) ||
+					(allowFileInfo.permission(QFile::ReadOther | QFile::WriteOther))) {
+
+					return true;
+				}
+			}
 		}
 	}
 
@@ -424,4 +443,3 @@ void NewReminderWindow::sendToMenu()
 		d->errorCall->handleError(ErrorHandling::windowClose, false);
 	}
 }
-

@@ -24,7 +24,6 @@
 #include <QtCore/QStringList>
 #include <QtCore/QString>
 
-
 /*
  * Check if both fcron.deny and fcron.allow exist.
  * (fcron.deny does not exist but fcron.allow exists then only those in fcron.allow are allowed to use fcron)
@@ -113,7 +112,7 @@ ActionReply KAuthHelper::readAllow(QVariantMap args)
 				if((line.isNull()) || (inputAllowFile.status() != QTextStream::Ok) || (allowFile.error() != QFile::NoError)) {
 					return setReturnValue(true, &allowFile, NULL, line.isNull(), inputAllowFile.status());
 				}
-				else if(line.contains(currentUser.loginName(), Qt::CaseSensitive)) {
+				else if((line.contains(currentUser.loginName(), Qt::CaseSensitive)) || (line.contains(QString("all"), Qt::CaseInsensitive))) {
 					allowFile.close();
 					userFoundInAllow = true;
 					break; //Found the user's username

@@ -42,24 +42,25 @@ public:
 
     enum errorNumber {
 		noError = 0,
-		windowClose = 1,
-		selectedOption = 2,
-		fcrontabFileOpen = 3,
-		writeReminderToFile = 4,
-		fileDelete = 5,
-		processCrashed = 6,
-		processNotStarted = 7,
-		fcronError = 8,
-		systemFunction = 9,
-		kauthintneralerror = 10,
-		kauthcustomerror = 11,
-		denyFileOpen = 12,
-		allowFileOpen = 13,
-		inputDenyRead = 14,
-		inputAllowRead = 15,
-		writeAllowFile = 16,
-		writeDenyFile = 17,
-		cannotConnect = 18
+		windowClose,
+		selectedOption,
+		fcrontabFileOpen,
+		writeReminderToFile,
+		fileDelete,
+		fileNotExist,
+		processCrashed,
+		processNotStarted,
+		fcronError,
+		systemFunction,
+		kauthintneralerror,
+		kauthcustomerror,
+		denyFileOpen ,
+		allowFileOpen,
+		inputDenyRead,
+		inputAllowRead,
+		writeAllowFile,
+		writeDenyFile,
+		cannotConnect
 	};
 
 	void handleError(errorNumber error = noError, bool endProgram = true, QFile::FileError fileError = QFile::NoError, QTextStream::Status textStreamError = QTextStream::Ok, bool isStringNull = false);

@@ -204,6 +204,7 @@ void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgra
 void ErrorHandling::handleKAuthError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError originalFileError, QFile::FileError newFileError, QTextStream::Status textStreamError, bool isStringNull, bool fileRemovalError)
 {
 	setKAuthErrors(error, endProgram, originalFileError, newFileError, textStreamError, isStringNull, fileRemovalError);
+	writeToLog();
 
 	switch((int)error) {
 		case kauthintneralerror: {
@@ -270,12 +271,18 @@ void ErrorHandling::writeToLog()
 	KUser currentUser;
 	QFile logFile(currentUser.homeDir() + "/.KReminder.log");
 
-	//Will this append or overwrite?
-	if(!logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		exit(EXIT_FAILURE);
+	if(logFile.exists()) {
+		if(!logFile.open(QIODevice::Append | QIODevice::Text)) {
+			exit(EXIT_FAILURE);
+		}
+	}
+	else {
+		if(!logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			exit(EXIT_FAILURE);
+		}
 	}
 
-	QString errors("#####");
+	QString errors("#####\n");
 	errors.append("Error Number: " + QString::number((int)d->error) + "\n");
 
 	if(d->endProgram) {
@@ -298,10 +305,10 @@ void ErrorHandling::writeToLog()
 	}
 
 	if(d->fileRemovalError) {
-		errors.append("File Removed: true\n");
+		errors.append("File Removal Error: true\n");
 	}
 	else {
-		errors.append("File Removed: false\n");
+		errors.append("File Removal Error: false\n");
 	}
 
 	if(d->connectError) {

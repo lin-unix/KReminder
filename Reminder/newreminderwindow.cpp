@@ -239,7 +239,13 @@ void NewReminderWindow::saveReminder()
 		}
 	}
 
-	//Open the temporary copy of the user's fcrontab file
+	/*
+	 * Open the temporary copy of the user's fcrontab file.
+	 *
+	 * Note: After this block of code has checked whether or not fcrontabFile exists,
+	 * this function assumes that the file will continue to exist throughout the execution of this block of code
+	 * because there is no guarantee that the file has not been deleted (even with file locks). Good ol' OS!
+	 */
 	if(fcrontabFile.exists()) {
 		if(fcrontabFile.open(QIODevice::ReadWrite | QIODevice::Text)) {
 			if(((fcrontabFile.readAll()).trimmed()).isEmpty()) {
@@ -297,16 +303,14 @@ void NewReminderWindow::saveReminder()
 }
 
 /*
- * TODO: Implement error value conversion from QVariant
+ * Check the user's fcron permissions
  */
 bool NewReminderWindow::checkUserPermissions()
 {
 	QFile denyFile("/usr/local/etc/fcron.deny"), allowFile("/usr/local/etc/fcron.allow");
 	QTextStream inputDenyFile(&denyFile), inputAllowFile(&allowFile);
-	//QFile::FileError denyError = QFile::NoError, allowError = QFile::NoError;
 	QString line;
 	ActionReply reply;
-	//bool userFoundInDeny = false, userFoundinAllow = false;
 	KUser currentUser;
 
 	if(!checkFilePermissions(&denyFile, &allowFile)) {
@@ -365,6 +369,8 @@ bool NewReminderWindow::checkUserPermissions()
 }
 
 /*
+ * Check the file permissions for fcron.allow and fcron.deny
+ *
  * Any errors from QFileInfo::ownerID(), groupId() or KUser::uid(), gid() are ignored,
  * and it is assumed that the user does not have read/write access to the needed file(s)
  */

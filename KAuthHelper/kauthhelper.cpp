@@ -25,24 +25,23 @@
 #include <QtCore/QString>
 
 /*
- * Check if both fcron.deny and fcron.allow exist.
- * (fcron.deny does not exist but fcron.allow exists then only those in fcron.allow are allowed to use fcron)
- * (fcron.deny exists but fcron.allow does not exist then only those not in fcron.deny are allowed to use fcron)
- * (Neither fcron.deny and fcron.allow exists means that everyone is allowed to use fcron)
+ * Notes about the priorities of fcron.deny and fcron.allow:
+ * If fcron.deny does not exist but fcron.allow exists, then only those users in fcron.allow are allowed to use fcron.
+ * If fcron.deny exists but fcron.allow does not exist, then only those not in fcron.deny are allowed to use fcron.
+ * If neither fcron.deny and fcron.allow exist, then everyone is allowed to use fcron.
+ * If both fcron.deny and fcron.allow exist, then fcron.deny overrides fcron.allow.
  *
- * Check if the user has read and write access to the existing files.
- * If not, get read and write permissions for both files.
- * If so, check if the user is listed in either file.
- *
- * If the user is in the deny list, remove them.
- * If the user is in the allow list, do nothing.
- * If the user is not in the allow list add them to it.
- *
- * Note: After this function has checked whether or not fcron.deny and fcron.allow exists,
- * this function assumes that the file(s) will continue to exist throughout the execution of this function
+ * Note: After this class has checked whether or not fcron.deny and fcron.allow exists,
+ * this class assumes that the file(s) will continue to exist throughout the execution of this class
  * because there is no guarantee that the file(s) have not been deleted (even with file locks). Good ol' OS!
+ *
+ *
+ * Read fcron.deny and check if the user is listed in the file.
+ * If the user is in fcron.deny, then remove them.
+ *
+ * Read fcron.allow and check if the user is listed in the file.
+ * If the user is not in fcron.allow, then add them.
  */
-
 
 ActionReply KAuthHelper::rwfcrontab(QVariantMap args)
 {

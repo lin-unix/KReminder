@@ -138,7 +138,7 @@ ActionReply KAuthHelper::editDeny(QVariantMap args)
 	KUser currentUser;
 	KProcess *systemCall = new KProcess(this);
 	QString contents, line;
-	QString originalFilename = args["filename"].toString(), newFilename = "/home/" + currentUser.loginName() + "/.tempKReminderDeny";
+	QString originalFilename = args["filename"].toString(), newFilename = currentUser.homeDir() + "/.tempKReminderDeny";
 	QFile originalFile(originalFilename), newFile(newFilename);
 	QTextStream inputStream(&originalFile);
 

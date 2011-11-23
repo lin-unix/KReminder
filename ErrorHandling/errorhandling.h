@@ -44,6 +44,7 @@ public:
 		noError = 0,
 		windowClose,
 		selectedOption,
+		userDirectoryNotExistent,
 		fcrontabFileOpen,
 		writeReminderToFile,
 		fileDelete,

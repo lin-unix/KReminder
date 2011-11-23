@@ -66,7 +66,10 @@ ErrorHandling::ErrorHandling(QWidget *parent) : d(new ErrorHandlingPrivate) {
 void ErrorHandling::handleError(ErrorHandling::errorNumber error, bool endProgram, QFile::FileError fileError, QTextStream::Status textStreamError, bool isStringNull)
 {
 	setErrors(error, endProgram, fileError, textStreamError, isStringNull);
-	writeToLog();
+
+	if(error != ErrorHandling::userDirectoryNotExistent) {
+		writeToLog();
+	}
 
     switch(error) {
         case windowClose: {

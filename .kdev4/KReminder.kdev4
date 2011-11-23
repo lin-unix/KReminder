@@ -27,10 +27,10 @@ Dependency Action=Build
 EnvironmentGroup=default
 Executable=file:///home/steven/Documents/Projects/KReminder/build/KReminder
 External Terminal=konsole --noclose --workdir %workdir -e %exe
-Project Target=
+Project Target=KReminder,KReminder
 Use External Terminal=false
 Working Directory=
-isExecutable=true
+isExecutable=false
 
 [MakeBuilder]
 Default Make Environment Profile=0

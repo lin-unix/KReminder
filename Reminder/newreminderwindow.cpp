@@ -208,9 +208,9 @@ void NewReminderWindow::changeDateTime(bool checked)
 void NewReminderWindow::saveReminder()
 {
 	KUser currentUser;
-	QFile fcrontabFile("/home/" + currentUser.loginName() + "/.KReminter_fcrontab");
+	QFile fcrontabFile(currentUser.homeDir() + "/.KReminter_fcrontab");
 	QFile::FileError fileError = QFile::NoError;
-	QString *cmdInput = new QString("fcrontab -l >> /home/" + currentUser.loginName() + "/.KReminter_fcrontab");
+	QString *cmdInput = new QString("fcrontab -l >> " + currentUser.homeDir() + "/.KReminter_fcrontab");
 	KProcess *systemCall = new KProcess(this);
 
 	switch(systemCall->execute(QString("fcrontab"), QStringList("-V"), -1)) {
@@ -230,13 +230,18 @@ void NewReminderWindow::saveReminder()
 	checkUserPermissions();
 
 	//Tell fcrontab to pipe the user's current fcrontab file into a temporary file
-	switch(system(cmdInput->toLocal8Bit().constData())) {
-		case -1: {
-			d->errorCall->handleError(ErrorHandling::systemFunction, true); //general error
+	if(QFile::exists(currentUser.homeDir())) {
+		switch(system(cmdInput->toLocal8Bit().constData())) {
+			case -1: {
+				d->errorCall->handleError(ErrorHandling::systemFunction, true); //general error
+			}
+			case 1: {
+				d->errorCall->handleError(ErrorHandling::fcronError, true); //fcron error code
+			}
 		}
-		case 1: {
-			d->errorCall->handleError(ErrorHandling::fcronError, true); //fcron error code
-		}
+	}
+	else {
+		d->errorCall->handleError(ErrorHandling::userDirectoryNotExistent, true);
 	}
 
 	/*
@@ -279,7 +284,7 @@ void NewReminderWindow::saveReminder()
 		d->errorCall->handleError(ErrorHandling::fileNotExist, true); //file does not exist
 	}
 
-	switch(systemCall->execute(QString("fcrontab"), QStringList("/home/" + currentUser.loginName() + "/.KReminter_fcrontab"), -1)) {
+	switch(systemCall->execute(QString("fcrontab"), QStringList(currentUser.homeDir() + "/.KReminter_fcrontab"), -1)) {
 		case -1: {
 			d->errorCall->handleError(ErrorHandling::processCrashed, true); //Process crashed
 		}
@@ -322,13 +327,13 @@ bool NewReminderWindow::checkUserPermissions()
 		args["fcron.allow"] = "/usr/local/etc/fcron.allow";
 		rwFiles.setArguments(args);
 
+		//TODO: Is the dbus service files cannot be read due to permissions, this will fail
 		reply = rwFiles.execute();
 
 		if(reply.failed()) {
 			QVariantMap errorArgs(reply.data());
 
 			if(reply.type() == ActionReply::KAuthError) { //Internal KAuth error
-				std::cerr << '\n' << reply.errorCode() << '\n';
 				d->errorCall->handleKAuthError(ErrorHandling::kauthintneralerror, true);
 			}
 			else if(reply.type() == ActionReply::HelperError) { //Self generated error code

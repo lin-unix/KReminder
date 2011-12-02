@@ -327,7 +327,6 @@ bool NewReminderWindow::checkUserPermissions()
 		args["fcron.allow"] = "/usr/local/etc/fcron.allow";
 		rwFiles.setArguments(args);
 
-		//TODO: Is the dbus service files cannot be read due to permissions, this will fail
 		reply = rwFiles.execute();
 
 		if(reply.failed()) {

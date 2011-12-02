@@ -31,6 +31,8 @@ using namespace KAuth;
 
 class KAuthHelper : public QObject
 {
+	Q_OBJECT
+
 private:
 	ActionReply setReturnValue(bool isError = false, QFile *fileOne = NULL, QFile *fileTwo = NULL, bool isStringNull = false, QTextStream::Status streamStatus = QTextStream::Ok);
 

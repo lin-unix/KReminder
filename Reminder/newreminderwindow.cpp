@@ -50,8 +50,7 @@
 #include <QtCore/QTime>
 #include <QtCore/QDate>
 #include <QtCore/QFileInfo>
-
-#include <iostream>
+#include <QtCore/QDebug>
 
 class NewReminderWindowPrivate
 {
@@ -409,10 +408,9 @@ bool NewReminderWindow::checkFilePermissions(QFile* denyFile, QFile* allowFile)
 //TODO: repeating reminders
 const char *NewReminderWindow::formatReminder()
 {
-	QString reminder(QString::number(d->timeEdit->time().minute())); //Minute
-
 	//Optional arguments may be added with a '&' prepended
 	//ie. run the command after the conditions are successfuly met five times: "&5, <min> <hr> <day-of-month> <month> <day-of-week> <command>"
+	QString reminder(QString::number(d->timeEdit->time().minute())); //Minute
 
 	reminder.append(" ");
 	reminder.append(QString::number(d->timeEdit->time().hour())); //Hour
@@ -424,7 +422,9 @@ const char *NewReminderWindow::formatReminder()
 	reminder.append(QString::number(d->calendarWidget->selectedDate().month())); //Month
 	reminder.append(" * ");//Day of week
 
-	reminder.append("rekonq\n"); //Command to run
+	reminder.append("/usr/bin/dolphin /"); //Command to run
+
+	qDebug() << reminder;
 	return reminder.toLocal8Bit().constData();
 }
 
